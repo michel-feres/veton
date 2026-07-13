@@ -5,9 +5,9 @@ const app = express();
 app.use(express.json());
 
 app.get("/", (req, res) => {
-    res.json({
-        mensagem: "API VetOn funcionando!"
-    });
+  res.json({
+    mensagem: "API VetOn funcionando!",
+  });
 });
 
 export default app;
