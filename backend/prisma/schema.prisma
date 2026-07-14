@@ -23,40 +23,40 @@ enum StatusUsuario {
 }
 
 model Usuario {
-  idUsuario     Int             @id @default(autoincrement())
-  rg            String
-  nome          String
-  cidade        String
-  email         String          @unique
-  estado        String
-  bairro        String
-  numero        String
-  cep           String
-  senha         String
-  situacao      StatusUsuario
-  tipoUsuario   TipoUsuario
+  idUsuario   Int           @id @default(autoincrement())
+  rg          String
+  nome        String
+  cidade      String
+  email       String        @unique
+  estado      String
+  bairro      String
+  numero      String
+  cep         String
+  senha       String
+  situacao    StatusUsuario
+  tipoUsuario TipoUsuario
 
-  tutor         Tutor?
-  veterinario   Veterinario?
+  tutor       Tutor?
+  veterinario Veterinario?
 }
 
 model Tutor {
-  idTutor   Int     @id @default(autoincrement())
-  cpf       String  @unique
+  idTutor Int    @id @default(autoincrement())
+  cpf     String @unique
 
   idUsuario Int     @unique
   usuario   Usuario @relation(fields: [idUsuario], references: [idUsuario])
 
-  animais    Animal[]
+  animais Animal[]
 }
 
 model Veterinario {
-  idVeterinario Int     @id @default(autoincrement())
-  crmv          String  @unique
+  idVeterinario Int    @id @default(autoincrement())
+  crmv          String @unique
   especialidade String
 
-  idUsuario     Int     @unique
-  usuario       Usuario @relation(fields: [idUsuario], references: [idUsuario])
+  idUsuario Int     @unique
+  usuario   Usuario @relation(fields: [idUsuario], references: [idUsuario])
 
   consultas Consulta[]
 }
@@ -74,68 +74,68 @@ enum StatusConsulta {
 }
 
 model Clinica {
-  idClinica    Int      @id @default(autoincrement())
-  nomeClinica  String
-  cnpj         String   @unique
-  telefone     String
-  endereco     String
+  idClinica   Int    @id @default(autoincrement())
+  nomeClinica String
+  cnpj        String @unique
+  telefone    String
+  endereco    String
 
-  consultas    Consulta[]
+  consultas Consulta[]
 }
 
 model Animal {
-  idAnimal         Int            @id @default(autoincrement())
-  nome             String
-  especie          String
-  raca             String
-  sexo             String
-  peso             Float
-  cor              String
-  dataNascimento   DateTime
-  status           StatusAnimal
+  idAnimal       Int          @id @default(autoincrement())
+  nome           String
+  especie        String
+  raca           String
+  sexo           String
+  peso           Float
+  cor            String
+  dataNascimento DateTime
+  status         StatusAnimal
 
-  idTutor          Int
-  tutor            Tutor          @relation(fields: [idTutor], references: [idTutor])
+  idTutor Int
+  tutor   Tutor @relation(fields: [idTutor], references: [idTutor])
 
-  vacinas          Vacina[]
-  historicos       HistoricoMedico[]
-  consultas        Consulta[]
+  vacinas    Vacina[]
+  historicos HistoricoMedico[]
+  consultas  Consulta[]
 }
 
 model Vacina {
-  idVacina       Int       @id @default(autoincrement())
-  nome           String
-  fabricante     String
-  dataAplicacao  DateTime
-  proximaDose    DateTime
+  idVacina      Int      @id @default(autoincrement())
+  nome          String
+  fabricante    String
+  dataAplicacao DateTime
+  proximaDose   DateTime
 
-  idAnimal       Int
-  animal         Animal    @relation(fields: [idAnimal], references: [idAnimal])
+  idAnimal Int
+  animal   Animal @relation(fields: [idAnimal], references: [idAnimal])
 }
 
 model HistoricoMedico {
-  idHistorico    Int       @id @default(autoincrement())
-  descricao      String
-  dataRegistro   DateTime
-  tratamento     String
+  idHistorico  Int      @id @default(autoincrement())
+  descricao    String
+  dataRegistro DateTime
+  tratamento   String
 
-  idAnimal       Int
-  animal         Animal    @relation(fields: [idAnimal], references: [idAnimal])
+  idAnimal Int
+  animal   Animal @relation(fields: [idAnimal], references: [idAnimal])
 }
 
 model Consulta {
-  idConsulta      Int              @id @default(autoincrement())
-  dataConsulta    DateTime
-  horaConsulta    String
-  observacoes     String
-  statusConsulta  StatusConsulta
+  idConsulta     Int            @id @default(autoincrement())
+  dataConsulta   DateTime
+  horaConsulta   String
+  observacoes    String
+  statusConsulta StatusConsulta
 
-  idAnimal        Int
-  animal          Animal           @relation(fields: [idAnimal], references: [idAnimal])
+  idAnimal Int
+  animal   Animal @relation(fields: [idAnimal], references: [idAnimal])
 
-  idVeterinario   Int
-  veterinario     Veterinario      @relation(fields: [idVeterinario], references: [idVeterinario])
+  idVeterinario Int
+  veterinario   Veterinario @relation(fields: [idVeterinario], references: [idVeterinario])
 
-  idClinica       Int
-  clinica         Clinica          @relation(fields: [idClinica], references: [idClinica])
+  idClinica Int
+  clinica   Clinica @relation(fields: [idClinica], references: [idClinica])
 }
