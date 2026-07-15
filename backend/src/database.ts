@@ -1,12 +1,18 @@
-// src/database.ts
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
-// Buscando o PrismaClient direto da pasta física gerada!
 import { PrismaClient } from "./generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+import * as dotenv from "dotenv";
+import * as path from "path";
 
-// Configura o pool do driver do Postgres nativo com a sua URL do Supabase
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("A variável DATABASE_URL não foi encontrada no ambiente do database.ts!");
+}
+
+const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
-// Instancia o Prisma usando o Adapter
 export const prisma = new PrismaClient({ adapter });

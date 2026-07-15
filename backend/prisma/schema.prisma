@@ -24,17 +24,17 @@ enum StatusUsuario {
 
 model Usuario {
   idUsuario   Int           @id @default(autoincrement())
-  rg          String
+  rg          String?
   nome        String
-  cidade      String
+  cidade      String?
   email       String        @unique
-  estado      String
-  bairro      String
-  numero      String
-  cep         String
+  estado      String?
+  bairro      String?
+  numero      String?
+  cep         String?
   senha       String
-  situacao    StatusUsuario
-  tipoUsuario TipoUsuario
+  situacao    StatusUsuario?
+  tipoUsuario TipoUsuario?
 
   tutor       Tutor?
   veterinario Veterinario?
