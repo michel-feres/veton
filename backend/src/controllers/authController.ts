@@ -7,7 +7,8 @@ const SALT_ROUNDS = 10;
 
 export const registrarUsuario = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { email, senha, nome } = req.body;
+    const { email, senha, nome, rg, cidade, estado, bairro, numero, cep, situacao, tipoUsuario } =
+      req.body;
 
     if (!email || !senha) {
       return res.status(400).json({ error: "E-mail e senha são obrigatórios." });
@@ -28,6 +29,14 @@ export const registrarUsuario = async (req: Request, res: Response): Promise<Res
         email,
         nome,
         senha: hashedPassword,
+        rg,
+        cidade,
+        estado,
+        bairro,
+        numero,
+        cep,
+        situacao,
+        tipoUsuario,
       },
     });
 
@@ -80,5 +89,112 @@ export const loginUsuario = async (req: Request, res: Response): Promise<Respons
   } catch (error) {
     console.error("Erro no login:", error);
     return res.status(500).json({ error: "Erro interno do servidor." });
+  }
+};
+
+export const esqueciSenha = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        error: "Informe o e-mail.",
+      });
+    }
+
+    const usuario = await prisma.usuario.findUnique({
+      where: { email },
+    });
+
+    if (!usuario) {
+      return res.status(404).json({
+        error: "Usuário não encontrado.",
+      });
+    }
+
+    // Gera um código de 6 dígitos
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Código expira em 15 minutos
+    const expiraCodigo = new Date(Date.now() + 15 * 60 * 1000);
+
+    await prisma.usuario.update({
+      where: {
+        idUsuario: usuario.idUsuario,
+      },
+      data: {
+        codigoRecuperacao: codigo,
+        expiraCodigo,
+      },
+    });
+
+    console.log("RECUPERAÇÃO DE SENHA");
+    console.log("E-mail:", usuario.email);
+    console.log("Código:", codigo);
+
+    return res.status(200).json({
+      message: "Código de recuperação gerado com sucesso.",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Erro interno do servidor.",
+    });
+  }
+};
+
+export const redefinirSenha = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { email, codigo, novaSenha } = req.body;
+
+    if (!email || !codigo || !novaSenha) {
+      return res.status(400).json({
+        error: "E-mail, código e nova senha são obrigatórios.",
+      });
+    }
+
+    const usuario = await prisma.usuario.findUnique({
+      where: { email },
+    });
+
+    if (!usuario) {
+      return res.status(404).json({
+        error: "Usuário não encontrado.",
+      });
+    }
+
+    if (
+      usuario.codigoRecuperacao !== codigo ||
+      !usuario.expiraCodigo ||
+      usuario.expiraCodigo < new Date()
+    ) {
+      return res.status(400).json({
+        error: "Código inválido ou expirado.",
+      });
+    }
+
+    const senhaHash = await bcrypt.hash(novaSenha, SALT_ROUNDS);
+
+    await prisma.usuario.update({
+      where: {
+        idUsuario: usuario.idUsuario,
+      },
+      data: {
+        senha: senhaHash,
+        codigoRecuperacao: null,
+        expiraCodigo: null,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Senha redefinida com sucesso!",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Erro interno do servidor.",
+    });
   }
 };
