@@ -5,6 +5,7 @@ import { prisma } from "../database";
 
 const SALT_ROUNDS = 10;
 
+//Registro de usuário
 export const registrarUsuario = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { email, senha, nome, rg, cidade, estado, bairro, numero, cep, situacao, tipoUsuario } =
@@ -50,6 +51,7 @@ export const registrarUsuario = async (req: Request, res: Response): Promise<Res
   }
 };
 
+//Login
 export const loginUsuario = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { email, senha } = req.body;
@@ -92,6 +94,7 @@ export const loginUsuario = async (req: Request, res: Response): Promise<Respons
   }
 };
 
+//Senha esquecida
 export const esqueciSenha = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { email } = req.body;
@@ -144,6 +147,7 @@ export const esqueciSenha = async (req: Request, res: Response): Promise<Respons
   }
 };
 
+//Redefini a senha
 export const redefinirSenha = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { email, codigo, novaSenha } = req.body;

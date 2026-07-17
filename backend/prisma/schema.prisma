@@ -35,7 +35,8 @@ model Usuario {
   senha       String
   situacao    StatusUsuario?
   tipoUsuario TipoUsuario?
-
+  codigoRecuperacao String?
+  expiraCodigo      DateTime?
   tutor       Tutor?
   veterinario Veterinario?
 }
