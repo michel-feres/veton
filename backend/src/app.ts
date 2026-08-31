@@ -1,25 +1,32 @@
 import express from "express";
 import {
-  registrarUsuario,
-  loginUsuario,
-  esqueciSenha,
-  redefinirSenha,
+    registrarUsuario,
+    loginUsuario,
+    esqueciSenha,
+    redefinirSenha,
 } from "./controllers/authController";
 import {
-  buscarPerfil,
-  atualizarPerfil,
-  deletarPerfil,
-  buscarLembretes,
+    buscarPerfil,
+    atualizarPerfil,
+    deletarPerfil,
+    buscarLembretes,
 } from "./controllers/usuarioController";
 import {
-  cadastrarAnimal,
-  listarAnimais,
-  buscarAnimal,
-  atualizarAnimal,
-  deletarAnimal,
+    cadastrarAnimal,
+    listarAnimais,
+    buscarAnimal,
+    atualizarAnimal,
+    deletarAnimal,
 } from "./controllers/animalController";
-import { verificarToken } from "./middlewares/authMiddleware";
-import { permitirCargos } from "./middlewares/roleMiddleware";
+import {
+    cadastrarClinica,
+    listarClinicas,
+    buscarClinica,
+    atualizarClinica,
+    deletarClinica,
+} from "./controllers/clinicaController";
+import {verificarToken} from "./middlewares/authMiddleware";
+import {permitirCargos} from "./middlewares/roleMiddleware";
 
 const app = express();
 app.use(express.json());
@@ -43,8 +50,10 @@ app.get("/animais/:id", verificarToken, buscarAnimal);
 app.put("/animais/:id", verificarToken, atualizarAnimal);
 app.delete("/animais/:id", verificarToken, deletarAnimal);
 
-app.post("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), (req, res) => {
-  res.json({ mensagem: "Clínica cadastrada com sucesso!" });
-});
+app.post("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), cadastrarClinica);
+app.get("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), listarClinicas);
+app.get("/clinicas/:id", verificarToken, permitirCargos(["VETERINARIO"]), buscarClinica);
+app.put("/clinicas/:id", verificarToken, permitirCargos(["VETERINARIO"]), atualizarClinica);
+app.delete("/clinicas/:id", verificarToken, permitirCargos(["VETERINARIO"]), deletarClinica);
 
 export default app;
