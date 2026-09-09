@@ -22,23 +22,35 @@ enum StatusUsuario {
   Inativo
 }
 
+model Pet {
+  idPet   Int          @id @default(autoincrement())
+  nome    String
+  especie String
+  raca    String?
+  status  StatusAnimal @default(Saudavel)
+
+  // Relacionamentos
+  vacinas          Vacina[]
+  historicoClinico HistoricoClinico[]
+}
+
 model Usuario {
-  idUsuario   Int           @id @default(autoincrement())
-  rg          String?
-  nome        String
-  cidade      String?
-  email       String        @unique
-  estado      String?
-  bairro      String?
-  numero      String?
-  cep         String?
-  senha       String
-  situacao    StatusUsuario?
-  tipoUsuario TipoUsuario?
+  idUsuario         Int            @id @default(autoincrement())
+  rg                String?
+  nome              String
+  cidade            String?
+  email             String         @unique
+  estado            String?
+  bairro            String?
+  numero            String?
+  cep               String?
+  senha             String
+  situacao          StatusUsuario?
+  tipoUsuario       TipoUsuario?
   codigoRecuperacao String?
   expiraCodigo      DateTime?
-  tutor       Tutor?
-  veterinario Veterinario?
+  tutor             Tutor?
+  veterinario       Veterinario?
 }
 
 model Tutor {
@@ -104,14 +116,16 @@ model Animal {
 }
 
 model Vacina {
-  idVacina      Int      @id @default(autoincrement())
+  idVacina      Int       @id @default(autoincrement())
   nome          String
   fabricante    String
   dataAplicacao DateTime
-  proximaDose   DateTime
+  proximaDose   DateTime?
 
   idAnimal Int
   animal   Animal @relation(fields: [idAnimal], references: [idAnimal])
+  pet      Pet?   @relation(fields: [petIdPet], references: [idPet])
+  petIdPet Int?
 }
 
 model HistoricoMedico {
@@ -122,6 +136,15 @@ model HistoricoMedico {
 
   idAnimal Int
   animal   Animal @relation(fields: [idAnimal], references: [idAnimal])
+}
+
+model HistoricoClinico {
+  idHistorico   Int      @id @default(autoincrement())
+  descricao     String // Observações médicas / prontuário
+  data          DateTime @default(now())
+  petId         Int
+  pet           Pet      @relation(fields: [petId], references: [idPet], onDelete: Cascade)
+  veterinarioId Int? // Opcional: ID do vet que escreveu
 }
 
 model Consulta {

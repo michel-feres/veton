@@ -3,3 +3,6 @@ node_modules
 .env
 
 /src/generated/prisma
+
+# se der algum erro de prisma, mais em questão ao generate, 
+# rodar npx prisma generate e npx prisma validate no terminal que funfa

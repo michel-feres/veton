@@ -19,6 +19,12 @@ import {
     deletarAnimal,
 } from "./controllers/animalController";
 import {
+    atualizarStatusPet,
+    registrarVacina,
+    adicionarHistorico,
+    buscarFichaPet
+} from "./controllers/atendimentoController";
+import {
     cadastrarClinica,
     listarClinicas,
     buscarClinica,
@@ -49,6 +55,12 @@ app.get("/animais", verificarToken, listarAnimais);
 app.get("/animais/:id", verificarToken, buscarAnimal);
 app.put("/animais/:id", verificarToken, atualizarAnimal);
 app.delete("/animais/:id", verificarToken, deletarAnimal);
+
+//pet
+app.get("/pets/:idPet/ficha", verificarToken, buscarFichaPet);
+app.patch("/pets/:idPet/status", verificarToken, permitirCargos(["VETERINARIO"]), atualizarStatusPet);
+app.post("/pets/:idPet/vacinas", verificarToken, permitirCargos(["VETERINARIO"]), registrarVacina);
+app.post("/pets/:idPet/historico", verificarToken, permitirCargos(["VETERINARIO"]), adicionarHistorico);
 
 app.post("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), cadastrarClinica);
 app.get("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), listarClinicas);
