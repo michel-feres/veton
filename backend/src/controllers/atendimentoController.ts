@@ -2,32 +2,32 @@ import { Response } from "express";
 import { CustomRequest } from "../middlewares/authMiddleware";
 import { prisma } from "../database";
 
-export const atualizarStatusPet = async (req: CustomRequest, res: Response) => {
+export const atualizarStatusAnimal = async (req: CustomRequest, res: Response) => {
     try {
-        const { idPet } = req.params;
-        const { status } = req.body; // ex: "EM_ATENDIMENTO" ou "SAUDAVEL"
+        const { idAnimal } = req.params;
+        const { status } = req.body;
 
         if (!status) {
             return res.status(400).json({ error: "O campo 'status' é obrigatório." });
         }
 
-        const petAtualizado = await prisma.pet.update({
-            where: { idPet: Number(idPet) },
+        const animalAtualizado = await prisma.animal.update({
+            where: { idAnimal: Number(idAnimal) },
             data: { status },
         });
 
         return res.status(200).json({
-            message: "Status do pet atualizado com sucesso!",
-            pet: petAtualizado,
+            message: "Status do animal atualizado com sucesso!",
+            animal: animalAtualizado,
         });
     } catch (_error) {
-        return res.status(500).json({ error: "Erro ao atualizar status do pet." });
+        return res.status(500).json({ error: "Erro ao atualizar status do animal." });
     }
 };
 
 export const registrarVacina = async (req: CustomRequest, res: Response) => {
     try {
-        const { idPet } = req.params;
+        const { idAnimal } = req.params;
         const { nome, fabricante, dataAplicacao, proximaDose } = req.body;
 
         if (!nome) {
@@ -41,7 +41,7 @@ export const registrarVacina = async (req: CustomRequest, res: Response) => {
                 dataAplicacao: dataAplicacao ? new Date(dataAplicacao) : new Date(),
                 proximaDose: proximaDose ? new Date(proximaDose) : undefined,
                 animal: {
-                    connect: { idAnimal: Number(idPet) }
+                    connect: { idAnimal: Number(idAnimal) }
                 },
             },
         });
@@ -57,61 +57,74 @@ export const registrarVacina = async (req: CustomRequest, res: Response) => {
 
 export const adicionarHistorico = async (req: CustomRequest, res: Response) => {
     try {
-        const { idPet } = req.params;
-        const { descricao } = req.body;
-        const veterinarioId = req.usuarioLogado?.idUsuario;
+        const { idAnimal } = req.params;
+        const { descricao, tratamento } = req.body;
+        const usuarioId = req.usuarioLogado?.idUsuario;
 
         if (!descricao) {
             return res.status(400).json({ error: "A descrição do prontuário é obrigatória." });
         }
 
-        // Garante que o Pet existe antes de tentar conectar
-        const petExiste = await prisma.pet.findUnique({
-            where: { idPet: Number(idPet) },
+        const animalExiste = await prisma.animal.findUnique({
+            where: { idAnimal: Number(idAnimal) },
         });
 
-        if (!petExiste) {
-            return res.status(404).json({ error: `Pet com ID ${idPet} não foi encontrado.` });
+        if (!animalExiste) {
+            return res.status(404).json({ error: `Animal com ID ${idAnimal} não foi encontrado.` });
         }
 
-        const novoHistorico = await prisma.historicoClinico.create({
+        let idVeterinario: number | null = null;
+        if (usuarioId) {
+            const vet = await prisma.veterinario.findUnique({
+                where: { idUsuario: Number(usuarioId) },
+            });
+            if (vet) {
+                idVeterinario = vet.idVeterinario;
+            }
+        }
+
+        const novoHistorico = await prisma.historicoMedico.create({
             data: {
                 descricao,
-                pet: {
-                    connect: { idPet: Number(idPet) },
+                tratamento: tratamento || null,
+                data: new Date(),
+                animal: {
+                    connect: { idAnimal: Number(idAnimal) },
                 },
-                veterinarioId: veterinarioId ? Number(veterinarioId) : null,
+                ...(idVeterinario && {
+                    veterinario: { connect: { idVeterinario } },
+                }),
             },
         });
 
         return res.status(201).json({
-            message: "Prontuário adicionado ao histórico clínico com sucesso!",
+            message: "Prontuário adicionado ao histórico médico com sucesso!",
             historico: novoHistorico,
         });
     } catch (error) {
         console.error("Erro detalhado no Prisma:", error);
-        return res.status(500).json({ error: "Erro ao adicionar histórico clínico." });
+        return res.status(500).json({ error: "Erro ao adicionar histórico médico." });
     }
 };
 
-export const buscarFichaPet = async (req: CustomRequest, res: Response) => {
+export const buscarFichaAnimal = async (req: CustomRequest, res: Response) => {
     try {
-        const { idPet } = req.params;
+        const { idAnimal } = req.params;
 
-        const pet = await prisma.pet.findUnique({
-            where: { idPet: Number(idPet) },
+        const animal = await prisma.animal.findUnique({
+            where: { idAnimal: Number(idAnimal) },
             include: {
                 vacinas: { orderBy: { dataAplicacao: "desc" } },
-                historicoClinico: { orderBy: { data: "desc" } },
+                historicoMedico: { orderBy: { data: "desc" } },
             },
         });
 
-        if (!pet) {
-            return res.status(404).json({ error: "Pet não encontrado." });
+        if (!animal) {
+            return res.status(404).json({ error: "Animal não encontrado." });
         }
 
-        return res.status(200).json(pet);
+        return res.status(200).json(animal);
     } catch (_error) {
-        return res.status(500).json({ error: "Erro ao buscar ficha do pet." });
+        return res.status(500).json({ error: "Erro ao buscar ficha do animal." });
     }
 };

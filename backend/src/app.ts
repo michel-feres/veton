@@ -19,10 +19,10 @@ import {
     deletarAnimal,
 } from "./controllers/animalController";
 import {
-    atualizarStatusPet,
+    atualizarStatusAnimal,
     registrarVacina,
     adicionarHistorico,
-    buscarFichaPet
+    buscarFichaAnimal
 } from "./controllers/atendimentoController";
 import {
     cadastrarClinica,
@@ -56,11 +56,11 @@ app.get("/animais/:id", verificarToken, buscarAnimal);
 app.put("/animais/:id", verificarToken, atualizarAnimal);
 app.delete("/animais/:id", verificarToken, deletarAnimal);
 
-//pet
-app.get("/pets/:idPet/ficha", verificarToken, buscarFichaPet);
-app.patch("/pets/:idPet/status", verificarToken, permitirCargos(["VETERINARIO"]), atualizarStatusPet);
-app.post("/pets/:idPet/vacinas", verificarToken, permitirCargos(["VETERINARIO"]), registrarVacina);
-app.post("/pets/:idPet/historico", verificarToken, permitirCargos(["VETERINARIO"]), adicionarHistorico);
+//animal
+app.get("/animais/:idAnimal/ficha", verificarToken, buscarFichaAnimal);
+app.patch("/animais/:idAnimal/status", verificarToken, permitirCargos(["VETERINARIO"]), atualizarStatusAnimal);
+app.post("/animais/:idAnimal/vacinas", verificarToken, permitirCargos(["VETERINARIO"]), registrarVacina);
+app.post("/animais/:idAnimal/historico", verificarToken, permitirCargos(["VETERINARIO"]), adicionarHistorico);
 
 app.post("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), cadastrarClinica);
 app.get("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), listarClinicas);

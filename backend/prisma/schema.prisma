@@ -22,16 +22,16 @@ enum StatusUsuario {
   Inativo
 }
 
-model Pet {
-  idPet   Int          @id @default(autoincrement())
-  nome    String
-  especie String
-  raca    String?
-  status  StatusAnimal @default(Saudavel)
+enum StatusAnimal {
+  Saudavel
+  EmTratamento
+  Emergencia
+}
 
-  // Relacionamentos
-  vacinas          Vacina[]
-  historicoClinico HistoricoClinico[]
+enum StatusConsulta {
+  Agendada
+  Concluida
+  Cancelada
 }
 
 model Usuario {
@@ -49,117 +49,99 @@ model Usuario {
   tipoUsuario       TipoUsuario?
   codigoRecuperacao String?
   expiraCodigo      DateTime?
+  
   tutor             Tutor?
   veterinario       Veterinario?
 }
 
 model Tutor {
-  idTutor Int    @id @default(autoincrement())
-  cpf     String @unique
+  idTutor   Int     @id @default(autoincrement())
+  cpf       String  @unique
 
   idUsuario Int     @unique
-  usuario   Usuario @relation(fields: [idUsuario], references: [idUsuario])
+  usuario   Usuario @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
 
-  animais Animal[]
+  animais   Animal[]
 }
 
 model Veterinario {
-  idVeterinario Int    @id @default(autoincrement())
-  crmv          String @unique
+  idVeterinario Int     @id @default(autoincrement())
+  crmv          String  @unique
   especialidade String
 
-  idUsuario Int     @unique
-  usuario   Usuario @relation(fields: [idUsuario], references: [idUsuario])
+  idUsuario     Int     @unique
+  usuario       Usuario @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
 
-  consultas Consulta[]
-}
-
-enum StatusAnimal {
-  Saudavel
-  EmTratamento
-  Emergencia
-}
-
-enum StatusConsulta {
-  Agendada
-  Concluida
-  Cancelada
+  consultas        Consulta[]
+  historicosCriados HistoricoMedico[]
 }
 
 model Clinica {
-  idClinica   Int    @id @default(autoincrement())
+  idClinica   Int        @id @default(autoincrement())
   nomeClinica String
-  cnpj        String @unique
+  cnpj        String     @unique
   telefone    String
   endereco    String
 
-  consultas Consulta[]
+  consultas   Consulta[]
 }
 
 model Animal {
   idAnimal       Int          @id @default(autoincrement())
   nome           String
   especie        String
-  raca           String
-  sexo           String
-  peso           Float
-  cor            String
-  dataNascimento DateTime
-  status         StatusAnimal
+  raca           String?
+  sexo           String?
+  peso           Float?
+  cor            String?
+  dataNascimento DateTime?
+  status         StatusAnimal @default(Saudavel)
 
-  idTutor Int
-  tutor   Tutor @relation(fields: [idTutor], references: [idTutor])
+  idTutor        Int
+  tutor          Tutor        @relation(fields: [idTutor], references: [idTutor], onDelete: Cascade)
 
-  vacinas    Vacina[]
-  historicos HistoricoMedico[]
-  consultas  Consulta[]
+  vacinas          Vacina[]
+  historicoMedico  HistoricoMedico[]
+  consultas        Consulta[]
 }
 
 model Vacina {
   idVacina      Int       @id @default(autoincrement())
   nome          String
-  fabricante    String
-  dataAplicacao DateTime
+  fabricante    String?
+  dataAplicacao DateTime  @default(now())
   proximaDose   DateTime?
 
-  idAnimal Int
-  animal   Animal @relation(fields: [idAnimal], references: [idAnimal])
-  pet      Pet?   @relation(fields: [petIdPet], references: [idPet])
-  petIdPet Int?
+  idAnimal      Int
+  animal        Animal    @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
 }
 
 model HistoricoMedico {
-  idHistorico  Int      @id @default(autoincrement())
-  descricao    String
-  dataRegistro DateTime
-  tratamento   String
+  idHistorico   Int          @id @default(autoincrement())
+  descricao     String
+  tratamento    String?
+  data          DateTime     @default(now())
 
-  idAnimal Int
-  animal   Animal @relation(fields: [idAnimal], references: [idAnimal])
-}
+  idAnimal      Int
+  animal        Animal       @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
 
-model HistoricoClinico {
-  idHistorico   Int      @id @default(autoincrement())
-  descricao     String // Observações médicas / prontuário
-  data          DateTime @default(now())
-  petId         Int
-  pet           Pet      @relation(fields: [petId], references: [idPet], onDelete: Cascade)
-  veterinarioId Int? // Opcional: ID do vet que escreveu
+  veterinarioId Int?
+  veterinario   Veterinario? @relation(fields: [veterinarioId], references: [idVeterinario])
 }
 
 model Consulta {
   idConsulta     Int            @id @default(autoincrement())
   dataConsulta   DateTime
   horaConsulta   String
-  observacoes    String
-  statusConsulta StatusConsulta
+  observacoes    String?
+  statusConsulta StatusConsulta @default(Agendada)
 
-  idAnimal Int
-  animal   Animal @relation(fields: [idAnimal], references: [idAnimal])
+  idAnimal       Int
+  animal         Animal         @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
 
-  idVeterinario Int
-  veterinario   Veterinario @relation(fields: [idVeterinario], references: [idVeterinario])
+  idVeterinario  Int
+  veterinario    Veterinario    @relation(fields: [idVeterinario], references: [idVeterinario])
 
-  idClinica Int
-  clinica   Clinica @relation(fields: [idClinica], references: [idClinica])
+  idClinica      Int
+  clinica        Clinica        @relation(fields: [idClinica], references: [idClinica])
 }

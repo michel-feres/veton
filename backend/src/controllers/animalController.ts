@@ -221,7 +221,7 @@ export const buscarAnimal = async (
                     },
                 },
                 vacinas: true,
-                historicos: true,
+                historicoMedico: true,
                 consultas: true,
             },
         });
