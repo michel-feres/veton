@@ -1,38 +1,38 @@
 import express from "express";
 import {
-    registrarUsuario,
-    loginUsuario,
-    esqueciSenha,
-    redefinirSenha,
+  registrarUsuario,
+  loginUsuario,
+  esqueciSenha,
+  redefinirSenha,
 } from "./controllers/authController";
 import {
-    buscarPerfil,
-    atualizarPerfil,
-    deletarPerfil,
-    buscarLembretes,
+  buscarPerfil,
+  atualizarPerfil,
+  deletarPerfil,
+  buscarLembretes,
 } from "./controllers/usuarioController";
 import {
-    cadastrarAnimal,
-    listarAnimais,
-    buscarAnimal,
-    atualizarAnimal,
-    deletarAnimal,
+  cadastrarAnimal,
+  listarAnimais,
+  buscarAnimal,
+  atualizarAnimal,
+  deletarAnimal,
 } from "./controllers/animalController";
 import {
-    atualizarStatusAnimal,
-    registrarVacina,
-    adicionarHistorico,
-    buscarFichaAnimal
+  atualizarStatusAnimal,
+  registrarVacina,
+  adicionarHistorico,
+  buscarFichaAnimal,
 } from "./controllers/atendimentoController";
 import {
-    cadastrarClinica,
-    listarClinicas,
-    buscarClinica,
-    atualizarClinica,
-    deletarClinica,
+  cadastrarClinica,
+  listarClinicas,
+  buscarClinica,
+  atualizarClinica,
+  deletarClinica,
 } from "./controllers/clinicaController";
-import {verificarToken} from "./middlewares/authMiddleware";
-import {permitirCargos} from "./middlewares/roleMiddleware";
+import { verificarToken } from "./middlewares/authMiddleware";
+import { permitirCargos } from "./middlewares/roleMiddleware";
 
 const app = express();
 app.use(express.json());
@@ -58,9 +58,24 @@ app.delete("/animais/:id", verificarToken, deletarAnimal);
 
 //animal
 app.get("/animais/:idAnimal/ficha", verificarToken, buscarFichaAnimal);
-app.patch("/animais/:idAnimal/status", verificarToken, permitirCargos(["VETERINARIO"]), atualizarStatusAnimal);
-app.post("/animais/:idAnimal/vacinas", verificarToken, permitirCargos(["VETERINARIO"]), registrarVacina);
-app.post("/animais/:idAnimal/historico", verificarToken, permitirCargos(["VETERINARIO"]), adicionarHistorico);
+app.patch(
+  "/animais/:idAnimal/status",
+  verificarToken,
+  permitirCargos(["VETERINARIO"]),
+  atualizarStatusAnimal
+);
+app.post(
+  "/animais/:idAnimal/vacinas",
+  verificarToken,
+  permitirCargos(["VETERINARIO"]),
+  registrarVacina
+);
+app.post(
+  "/animais/:idAnimal/historico",
+  verificarToken,
+  permitirCargos(["VETERINARIO"]),
+  adicionarHistorico
+);
 
 app.post("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), cadastrarClinica);
 app.get("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), listarClinicas);
