@@ -22,3 +22,8 @@ Thumbs.db
 
 # Arquivos do TypeScript
 *.tsbuildinfo
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
