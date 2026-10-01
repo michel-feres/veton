@@ -1,13 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-const supabaseUrl = process.env.DATABASE_URL;
-const supabaseAnonKey = process.env.DATABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Variáveis de ambiente do Supabase não configuradas!");
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Supabase foi removido do projeto.
+// O acesso ao banco é feito exclusivamente pelo Prisma + PostgreSQL
+// através de src/database.ts.
+export {};
