@@ -8,11 +8,45 @@ const SALT_ROUNDS = 10;
 //Registro de usuário
 export const registrarUsuario = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { email, senha, nome, rg, cidade, estado, bairro, numero, cep, situacao, tipoUsuario } =
-      req.body;
+    const {
+      email,
+      senha,
+      nome,
+      rg,
+      cidade,
+      estado,
+      bairro,
+      numero,
+      cep,
+      situacao,
+      tipoUsuario,
+      cpf,
+      crmv,
+      especialidade,
+    } = req.body;
 
-    if (!email || !senha) {
-      return res.status(400).json({ error: "E-mail e senha são obrigatórios." });
+    if (!email || !senha || !nome || !tipoUsuario) {
+      return res.status(400).json({
+        error: "E-mail, senha, nome e tipo de usuário são obrigatórios.",
+      });
+    }
+
+    if (!["Tutor", "Veterinario"].includes(tipoUsuario)) {
+      return res.status(400).json({
+        error: "Tipo de usuário inválido.",
+      });
+    }
+
+    if (tipoUsuario === "Tutor" && !cpf) {
+      return res.status(400).json({
+        error: "CPF é obrigatório para Tutor.",
+      });
+    }
+
+    if (tipoUsuario === "Veterinario" && (!crmv || !especialidade)) {
+      return res.status(400).json({
+        error: "CRMV e especialidade são obrigatórios para Veterinário.",
+      });
     }
 
     const usuarioExistente = await prisma.usuario.findUnique({
@@ -20,34 +54,67 @@ export const registrarUsuario = async (req: Request, res: Response): Promise<Res
     });
 
     if (usuarioExistente) {
-      return res.status(400).json({ error: "Este e-mail já está em uso." });
+      return res.status(400).json({
+        error: "Este e-mail já está em uso.",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
 
-    const novoUsuario = await prisma.usuario.create({
-      data: {
-        email,
-        nome,
-        senha: hashedPassword,
-        rg,
-        cidade,
-        estado,
-        bairro,
-        numero,
-        cep,
-        situacao,
-        tipoUsuario,
-      },
+    const resultado = await prisma.$transaction(async (tx) => {
+      const novoUsuario = await tx.usuario.create({
+        data: {
+          email,
+          nome,
+          senha: hashedPassword,
+          rg,
+          cidade,
+          estado,
+          bairro,
+          numero,
+          cep,
+          situacao,
+          tipoUsuario,
+        },
+      });
+
+      if (tipoUsuario === "Tutor") {
+        await tx.tutor.create({
+          data: {
+            cpf,
+            idUsuario: novoUsuario.idUsuario,
+          },
+        });
+      }
+
+      if (tipoUsuario === "Veterinario") {
+        await tx.veterinario.create({
+          data: {
+            crmv,
+            especialidade,
+            idUsuario: novoUsuario.idUsuario,
+          },
+        });
+      }
+
+      return novoUsuario;
     });
 
     return res.status(201).json({
       message: "Usuário cadastrado com sucesso!",
-      user: { id: novoUsuario.idUsuario, email: novoUsuario.email, nome: novoUsuario.nome },
+      user: {
+        id: resultado.idUsuario,
+        email: resultado.email,
+        nome: resultado.nome,
+        tipoUsuario: resultado.tipoUsuario,
+      },
     });
   } catch (error) {
     console.error("Erro no registro:", error);
-    return res.status(500).json({ error: "Erro interno do servidor." });
+
+    return res.status(500).json({
+      error: "Erro interno do servidor.",
+    });
   }
 };
 
