@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../database";
+import { enviarCodigoRecuperacao } from "../utils/email";
 
 const SALT_ROUNDS = 10;
 
@@ -198,9 +199,7 @@ export const esqueciSenha = async (req: Request, res: Response): Promise<Respons
       },
     });
 
-    console.log("RECUPERAÇÃO DE SENHA");
-    console.log("E-mail:", usuario.email);
-    console.log("Código:", codigo);
+    await enviarCodigoRecuperacao(usuario.email, codigo);
 
     return res.status(200).json({
       message: "Código de recuperação gerado com sucesso.",
