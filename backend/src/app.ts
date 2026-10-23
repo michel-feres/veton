@@ -31,6 +31,18 @@ import {
   atualizarClinica,
   deletarClinica,
 } from "./controllers/clinicaController";
+import {
+  marcarConsulta,
+  listarConsultas,
+} from "./controllers/consultas/consultaAgendamentoController";
+
+import {
+  alterarHorarioConsulta,
+  cancelarConsulta,
+  excluirConsulta,
+  reativarConsulta,
+} from "./controllers/consultas/consultaGerenciamentoController";
+
 import { verificarToken } from "./middlewares/authMiddleware";
 import { permitirCargos } from "./middlewares/roleMiddleware";
 
@@ -77,10 +89,19 @@ app.post(
   adicionarHistorico
 );
 
+//clinicas
 app.post("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), cadastrarClinica);
 app.get("/clinicas", verificarToken, permitirCargos(["VETERINARIO"]), listarClinicas);
 app.get("/clinicas/:id", verificarToken, permitirCargos(["VETERINARIO"]), buscarClinica);
 app.put("/clinicas/:id", verificarToken, permitirCargos(["VETERINARIO"]), atualizarClinica);
 app.delete("/clinicas/:id", verificarToken, permitirCargos(["VETERINARIO"]), deletarClinica);
+
+// Consultas
+app.post("/consultas", verificarToken, marcarConsulta);
+app.get("/consultas", verificarToken, listarConsultas);
+app.patch("/consultas/:id/horario", verificarToken, alterarHorarioConsulta);
+app.patch("/consultas/:id/cancelar", verificarToken, cancelarConsulta);
+app.patch("/consultas/:id/reativar", verificarToken, reativarConsulta);
+app.delete("/consultas/:id", verificarToken, excluirConsulta);
 
 export default app;
