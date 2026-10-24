@@ -5,12 +5,14 @@ import {
   esqueciSenha,
   redefinirSenha,
 } from "./controllers/authController";
+
 import {
   buscarPerfil,
   atualizarPerfil,
   deletarPerfil,
   buscarLembretes,
 } from "./controllers/usuarioController";
+
 import {
   cadastrarAnimal,
   listarAnimais,
@@ -18,12 +20,14 @@ import {
   atualizarAnimal,
   deletarAnimal,
 } from "./controllers/animalController";
+
 import {
   atualizarStatusAnimal,
   registrarVacina,
   adicionarHistorico,
   buscarFichaAnimal,
 } from "./controllers/atendimentoController";
+
 import {
   cadastrarClinica,
   listarClinicas,
@@ -31,6 +35,7 @@ import {
   atualizarClinica,
   deletarClinica,
 } from "./controllers/clinicaController";
+
 import {
   marcarConsulta,
   listarConsultas,
@@ -42,6 +47,16 @@ import {
   excluirConsulta,
   reativarConsulta,
 } from "./controllers/consultas/consultaGerenciamentoController";
+
+import {
+  consultarRelatorioConsultas,
+  exportarRelatorioConsultas,
+} from "./controllers/relatorios/consultasRelatorioController";
+
+import {
+  consultarRelatorioAnimais,
+  exportarRelatorioAnimais,
+} from "./controllers/relatorios/animaisRelatorioController";
 
 import { verificarToken } from "./middlewares/authMiddleware";
 import { permitirCargos } from "./middlewares/roleMiddleware";
@@ -103,5 +118,34 @@ app.patch("/consultas/:id/horario", verificarToken, alterarHorarioConsulta);
 app.patch("/consultas/:id/cancelar", verificarToken, cancelarConsulta);
 app.patch("/consultas/:id/reativar", verificarToken, reativarConsulta);
 app.delete("/consultas/:id", verificarToken, excluirConsulta);
+
+// Relatórios
+app.get(
+  "/relatorios/consultas",
+  verificarToken,
+  permitirCargos(["Veterinario"]),
+  consultarRelatorioConsultas
+);
+
+app.get(
+  "/relatorios/consultas/exportar",
+  verificarToken,
+  permitirCargos(["Veterinario"]),
+  exportarRelatorioConsultas
+);
+
+app.get(
+  "/relatorios/animais",
+  verificarToken,
+  permitirCargos(["Veterinario"]),
+  consultarRelatorioAnimais
+);
+
+app.get(
+  "/relatorios/animais/exportar",
+  verificarToken,
+  permitirCargos(["Veterinario"]),
+  exportarRelatorioAnimais
+);
 
 export default app;
