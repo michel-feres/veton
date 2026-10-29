@@ -2,6 +2,7 @@ import { Response } from "express";
 import { CustomRequest } from "../../middlewares/authMiddleware";
 import { obterRelatorioAnimais } from "../../services/relatorioService";
 import { gerarExcel, gerarPDF } from "../../services/exportacaoRelatorioService";
+import { respostaErro, respostaSucesso } from "../../utils/respostaApi";
 
 // Dados para o painel de animais
 export const consultarRelatorioAnimais = async (
@@ -9,15 +10,15 @@ export const consultarRelatorioAnimais = async (
   res: Response
 ): Promise<Response> => {
   try {
+    void req;
+
     const relatorio = await obterRelatorioAnimais();
 
-    return res.status(200).json(relatorio);
+    return respostaSucesso(res, 200, "Relatório de animais gerado com sucesso!", { relatorio });
   } catch (error) {
     console.error("Erro ao gerar relatório de animais:", error);
 
-    return res.status(500).json({
-      error: "Erro ao gerar relatório de animais.",
-    });
+    return respostaErro(res, 500, "Erro ao gerar relatório de animais.");
   }
 };
 
@@ -30,9 +31,7 @@ export const exportarRelatorioAnimais = async (
     const formato = req.query.formato;
 
     if (formato !== "pdf" && formato !== "excel") {
-      return res.status(400).json({
-        error: "Informe formato=pdf ou formato=excel.",
-      });
+      return respostaErro(res, 400, "Informe formato=pdf ou formato=excel.");
     }
 
     const relatorio = await obterRelatorioAnimais();
@@ -87,8 +86,6 @@ export const exportarRelatorioAnimais = async (
   } catch (error) {
     console.error("Erro ao exportar relatório de animais:", error);
 
-    return res.status(500).json({
-      error: "Erro ao exportar relatório de animais.",
-    });
+    return respostaErro(res, 500, "Erro ao exportar relatório de animais.");
   }
 };

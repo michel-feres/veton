@@ -1,16 +1,13 @@
-import { CustomRequest } from "../middlewares/authMiddleware";
 import { Response } from "express";
+import { CustomRequest } from "../middlewares/authMiddleware";
 import { prisma } from "../database";
+import { respostaErro, respostaSucesso } from "../utils/respostaApi";
 
 // Buscar tipo do usuário logado
 const buscarTipoUsuario = async (idUsuario: number) => {
   const usuario = await prisma.usuario.findUnique({
-    where: {
-      idUsuario,
-    },
-    select: {
-      tipoUsuario: true,
-    },
+    where: { idUsuario },
+    select: { tipoUsuario: true },
   });
 
   return usuario?.tipoUsuario;
@@ -22,17 +19,13 @@ export const cadastrarAnimal = async (req: CustomRequest, res: Response): Promis
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const tipoUsuario = await buscarTipoUsuario(idUsuario);
 
     if (tipoUsuario !== "Veterinario") {
-      return res.status(403).json({
-        error: "Apenas veterinários podem cadastrar animais.",
-      });
+      return respostaErro(res, 403, "Apenas veterinários podem cadastrar animais.");
     }
 
     const { nome, especie, raca, sexo, peso, cor, dataNascimento, status, idTutor } = req.body;
@@ -48,21 +41,15 @@ export const cadastrarAnimal = async (req: CustomRequest, res: Response): Promis
       !status ||
       !idTutor
     ) {
-      return res.status(400).json({
-        error: "Todos os dados do animal são obrigatórios.",
-      });
+      return respostaErro(res, 400, "Todos os dados do animal são obrigatórios.");
     }
 
     const tutor = await prisma.tutor.findUnique({
-      where: {
-        idTutor: Number(idTutor),
-      },
+      where: { idTutor: Number(idTutor) },
     });
 
     if (!tutor) {
-      return res.status(404).json({
-        error: "Tutor não encontrado.",
-      });
+      return respostaErro(res, 404, "Tutor não encontrado.");
     }
 
     const animal = await prisma.animal.create({
@@ -79,16 +66,12 @@ export const cadastrarAnimal = async (req: CustomRequest, res: Response): Promis
       },
     });
 
-    return res.status(201).json({
-      message: "Animal cadastrado com sucesso!",
+    return respostaSucesso(res, 201, "Animal cadastrado com sucesso!", {
       animal,
     });
   } catch (error) {
     console.error(error);
-
-    return res.status(500).json({
-      error: "Erro ao cadastrar animal.",
-    });
+    return respostaErro(res, 500, "Erro ao cadastrar animal.");
   }
 };
 
@@ -98,14 +81,11 @@ export const listarAnimais = async (req: CustomRequest, res: Response): Promise<
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const tipoUsuario = await buscarTipoUsuario(idUsuario);
 
-    // Veterinário pode visualizar todos os animais
     if (tipoUsuario === "Veterinario") {
       const animais = await prisma.animal.findMany({
         include: {
@@ -125,41 +105,29 @@ export const listarAnimais = async (req: CustomRequest, res: Response): Promise<
         },
       });
 
-      return res.status(200).json(animais);
+      return respostaSucesso(res, 200, "Animais consultados com sucesso.", { animais });
     }
 
-    // Tutor pode visualizar somente seus próprios animais
     if (tipoUsuario === "Tutor") {
       const tutor = await prisma.tutor.findUnique({
-        where: {
-          idUsuario,
-        },
+        where: { idUsuario },
       });
 
       if (!tutor) {
-        return res.status(404).json({
-          error: "Tutor não encontrado.",
-        });
+        return respostaErro(res, 404, "Tutor não encontrado.");
       }
 
       const animais = await prisma.animal.findMany({
-        where: {
-          idTutor: tutor.idTutor,
-        },
+        where: { idTutor: tutor.idTutor },
       });
 
-      return res.status(200).json(animais);
+      return respostaSucesso(res, 200, "Animais consultados com sucesso.", { animais });
     }
 
-    return res.status(403).json({
-      error: "Permissão não autorizada.",
-    });
+    return respostaErro(res, 403, "Permissão não autorizada.");
   } catch (error) {
     console.error(error);
-
-    return res.status(500).json({
-      error: "Erro ao listar animais.",
-    });
+    return respostaErro(res, 500, "Erro ao listar animais.");
   }
 };
 
@@ -170,23 +138,17 @@ export const buscarAnimal = async (req: CustomRequest, res: Response): Promise<R
     const idAnimal = Number(req.params.id);
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
-    if (!idAnimal) {
-      return res.status(400).json({
-        error: "ID do animal inválido.",
-      });
+    if (!Number.isInteger(idAnimal) || idAnimal <= 0) {
+      return respostaErro(res, 400, "ID do animal inválido.");
     }
 
     const tipoUsuario = await buscarTipoUsuario(idUsuario);
 
     const animal = await prisma.animal.findUnique({
-      where: {
-        idAnimal,
-      },
+      where: { idAnimal },
       include: {
         tutor: {
           select: {
@@ -208,44 +170,25 @@ export const buscarAnimal = async (req: CustomRequest, res: Response): Promise<R
     });
 
     if (!animal) {
-      return res.status(404).json({
-        error: "Animal não encontrado.",
-      });
+      return respostaErro(res, 404, "Animal não encontrado.");
     }
 
-    // Tutor só pode visualizar seus próprios animais
     if (tipoUsuario === "Tutor") {
       const tutor = await prisma.tutor.findUnique({
-        where: {
-          idUsuario,
-        },
+        where: { idUsuario },
       });
 
       if (!tutor || animal.idTutor !== tutor.idTutor) {
-        return res.status(403).json({
-          error: "Você não tem permissão para visualizar este animal.",
-        });
+        return respostaErro(res, 403, "Você não tem permissão para visualizar este animal.");
       }
+    } else if (tipoUsuario !== "Veterinario") {
+      return respostaErro(res, 403, "Permissão não autorizada.");
     }
 
-    // Veterário pode visualizar qualquer animal
-    if (tipoUsuario === "Veterinario") {
-      return res.status(200).json(animal);
-    }
-
-    if (tipoUsuario !== "Tutor") {
-      return res.status(403).json({
-        error: "Permissão não autorizada.",
-      });
-    }
-
-    return res.status(200).json(animal);
+    return respostaSucesso(res, 200, "Animal consultado com sucesso.", { animal });
   } catch (error) {
     console.error(error);
-
-    return res.status(500).json({
-      error: "Erro ao buscar animal.",
-    });
+    return respostaErro(res, 500, "Erro ao buscar animal.");
   }
 };
 
@@ -255,59 +198,43 @@ export const atualizarAnimal = async (req: CustomRequest, res: Response): Promis
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const tipoUsuario = await buscarTipoUsuario(idUsuario);
 
     if (tipoUsuario !== "Veterinario") {
-      return res.status(403).json({
-        error: "Apenas veterinários podem atualizar animais.",
-      });
+      return respostaErro(res, 403, "Apenas veterinários podem atualizar animais.");
     }
 
     const idAnimal = Number(req.params.id);
 
-    if (!idAnimal) {
-      return res.status(400).json({
-        error: "ID do animal inválido.",
-      });
+    if (!Number.isInteger(idAnimal) || idAnimal <= 0) {
+      return respostaErro(res, 400, "ID do animal inválido.");
     }
 
     const animalExistente = await prisma.animal.findUnique({
-      where: {
-        idAnimal,
-      },
+      where: { idAnimal },
     });
 
     if (!animalExistente) {
-      return res.status(404).json({
-        error: "Animal não encontrado.",
-      });
+      return respostaErro(res, 404, "Animal não encontrado.");
     }
 
     const { nome, especie, raca, sexo, peso, cor, dataNascimento, status, idTutor } = req.body;
 
     if (idTutor !== undefined) {
       const tutor = await prisma.tutor.findUnique({
-        where: {
-          idTutor: Number(idTutor),
-        },
+        where: { idTutor: Number(idTutor) },
       });
 
       if (!tutor) {
-        return res.status(404).json({
-          error: "Tutor não encontrado.",
-        });
+        return respostaErro(res, 404, "Tutor não encontrado.");
       }
     }
 
     const animal = await prisma.animal.update({
-      where: {
-        idAnimal,
-      },
+      where: { idAnimal },
       data: {
         nome,
         especie,
@@ -321,16 +248,10 @@ export const atualizarAnimal = async (req: CustomRequest, res: Response): Promis
       },
     });
 
-    return res.status(200).json({
-      message: "Animal atualizado com sucesso!",
-      animal,
-    });
+    return respostaSucesso(res, 200, "Animal atualizado com sucesso!", { animal });
   } catch (error) {
     console.error(error);
-
-    return res.status(500).json({
-      error: "Erro ao atualizar animal.",
-    });
+    return respostaErro(res, 500, "Erro ao atualizar animal.");
   }
 };
 
@@ -340,53 +261,36 @@ export const deletarAnimal = async (req: CustomRequest, res: Response): Promise<
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const tipoUsuario = await buscarTipoUsuario(idUsuario);
 
     if (tipoUsuario !== "Veterinario") {
-      return res.status(403).json({
-        error: "Apenas veterinários podem excluir animais.",
-      });
+      return respostaErro(res, 403, "Apenas veterinários podem excluir animais.");
     }
 
     const idAnimal = Number(req.params.id);
 
-    if (!idAnimal) {
-      return res.status(400).json({
-        error: "ID do animal inválido.",
-      });
+    if (!Number.isInteger(idAnimal) || idAnimal <= 0) {
+      return respostaErro(res, 400, "ID do animal inválido.");
     }
 
     const animal = await prisma.animal.findUnique({
-      where: {
-        idAnimal,
-      },
+      where: { idAnimal },
     });
 
     if (!animal) {
-      return res.status(404).json({
-        error: "Animal não encontrado.",
-      });
+      return respostaErro(res, 404, "Animal não encontrado.");
     }
 
     await prisma.animal.delete({
-      where: {
-        idAnimal,
-      },
+      where: { idAnimal },
     });
 
-    return res.status(200).json({
-      message: "Animal excluído com sucesso!",
-    });
+    return respostaSucesso(res, 200, "Animal excluído com sucesso!");
   } catch (error) {
     console.error(error);
-
-    return res.status(500).json({
-      error: "Erro ao excluir animal.",
-    });
+    return respostaErro(res, 500, "Erro ao excluir animal.");
   }
 };

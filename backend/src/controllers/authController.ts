@@ -3,10 +3,11 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../database";
 import { enviarCodigoRecuperacao } from "../utils/email";
+import { respostaErro, respostaSucesso } from "../utils/respostaApi";
 
 const SALT_ROUNDS = 10;
 
-//Registro de usuário
+// Registrar usuário
 export const registrarUsuario = async (req: Request, res: Response): Promise<Response> => {
   try {
     const {
@@ -27,27 +28,19 @@ export const registrarUsuario = async (req: Request, res: Response): Promise<Res
     } = req.body;
 
     if (!email || !senha || !nome || !tipoUsuario) {
-      return res.status(400).json({
-        error: "E-mail, senha, nome e tipo de usuário são obrigatórios.",
-      });
+      return respostaErro(res, 400, "E-mail, senha, nome e tipo de usuário são obrigatórios.");
     }
 
     if (!["Tutor", "Veterinario"].includes(tipoUsuario)) {
-      return res.status(400).json({
-        error: "Tipo de usuário inválido.",
-      });
+      return respostaErro(res, 400, "Tipo de usuário inválido.");
     }
 
     if (tipoUsuario === "Tutor" && !cpf) {
-      return res.status(400).json({
-        error: "CPF é obrigatório para Tutor.",
-      });
+      return respostaErro(res, 400, "CPF é obrigatório para tutor.");
     }
 
     if (tipoUsuario === "Veterinario" && (!crmv || !especialidade)) {
-      return res.status(400).json({
-        error: "CRMV e especialidade são obrigatórios para Veterinário.",
-      });
+      return respostaErro(res, 400, "CRMV e especialidade são obrigatórios para veterinário.");
     }
 
     const usuarioExistente = await prisma.usuario.findUnique({
@@ -55,9 +48,7 @@ export const registrarUsuario = async (req: Request, res: Response): Promise<Res
     });
 
     if (usuarioExistente) {
-      return res.status(400).json({
-        error: "Este e-mail já está em uso.",
-      });
+      return respostaErro(res, 400, "Este e-mail já está em uso.");
     }
 
     const hashedPassword = await bcrypt.hash(senha, SALT_ROUNDS);
@@ -101,8 +92,7 @@ export const registrarUsuario = async (req: Request, res: Response): Promise<Res
       return novoUsuario;
     });
 
-    return res.status(201).json({
-      message: "Usuário cadastrado com sucesso!",
+    return respostaSucesso(res, 201, "Usuário cadastrado com sucesso!", {
       user: {
         id: resultado.idUsuario,
         email: resultado.email,
@@ -113,19 +103,17 @@ export const registrarUsuario = async (req: Request, res: Response): Promise<Res
   } catch (error) {
     console.error("Erro no registro:", error);
 
-    return res.status(500).json({
-      error: "Erro interno do servidor.",
-    });
+    return respostaErro(res, 500, "Erro interno do servidor.");
   }
 };
 
-//Login
+// Login
 export const loginUsuario = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { email, senha } = req.body;
 
     if (!email || !senha) {
-      return res.status(400).json({ error: "E-mail e senha são obrigatórios." });
+      return respostaErro(res, 400, "E-mail e senha são obrigatórios.");
     }
 
     const usuario = await prisma.usuario.findUnique({
@@ -133,44 +121,52 @@ export const loginUsuario = async (req: Request, res: Response): Promise<Respons
     });
 
     if (!usuario) {
-      return res.status(401).json({ error: "Credenciais inválidas." });
+      return respostaErro(res, 401, "Credenciais inválidas.");
     }
 
     const senhaCorreta = await bcrypt.compare(senha, usuario.senha);
 
     if (!senhaCorreta) {
-      return res.status(401).json({ error: "Credenciais inválidas." });
+      return respostaErro(res, 401, "Credenciais inválidas.");
     }
 
     const secret = process.env.JWT_SECRET;
+
     if (!secret) {
-      return res.status(500).json({ error: "Chave secreta do JWT não configurada no servidor!" });
+      return respostaErro(res, 500, "Chave secreta do JWT não configurada no servidor.");
     }
 
-    const token = jwt.sign({ userId: usuario.idUsuario, email: usuario.email }, secret, {
-      expiresIn: "1d",
-    });
+    const token = jwt.sign(
+      {
+        userId: usuario.idUsuario,
+        email: usuario.email,
+      },
+      secret,
+      { expiresIn: "1d" }
+    );
 
-    return res.status(200).json({
-      message: "Login realizado com sucesso!",
+    return respostaSucesso(res, 200, "Login realizado com sucesso!", {
       token,
-      user: { id: usuario.idUsuario, email: usuario.email, name: usuario.nome },
+      user: {
+        id: usuario.idUsuario,
+        email: usuario.email,
+        name: usuario.nome,
+      },
     });
   } catch (error) {
     console.error("Erro no login:", error);
-    return res.status(500).json({ error: "Erro interno do servidor." });
+
+    return respostaErro(res, 500, "Erro interno do servidor.");
   }
 };
 
-//Senha esquecida
+// Senha esquecida
 export const esqueciSenha = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({
-        error: "Informe o e-mail.",
-      });
+      return respostaErro(res, 400, "Informe o e-mail.");
     }
 
     const usuario = await prisma.usuario.findUnique({
@@ -178,15 +174,11 @@ export const esqueciSenha = async (req: Request, res: Response): Promise<Respons
     });
 
     if (!usuario) {
-      return res.status(404).json({
-        error: "Usuário não encontrado.",
-      });
+      return respostaErro(res, 404, "Usuário não encontrado.");
     }
 
-    // Gera um código de 6 dígitos
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Código expira em 15 minutos
     const expiraCodigo = new Date(Date.now() + 15 * 60 * 1000);
 
     await prisma.usuario.update({
@@ -201,27 +193,21 @@ export const esqueciSenha = async (req: Request, res: Response): Promise<Respons
 
     await enviarCodigoRecuperacao(usuario.email, codigo);
 
-    return res.status(200).json({
-      message: "Código de recuperação gerado com sucesso.",
-    });
+    return respostaSucesso(res, 200, "Código de recuperação gerado com sucesso.");
   } catch (error) {
-    console.error(error);
+    console.error("Erro ao solicitar recuperação de senha:", error);
 
-    return res.status(500).json({
-      error: "Erro interno do servidor.",
-    });
+    return respostaErro(res, 500, "Erro interno do servidor.");
   }
 };
 
-//Redefini a senha
+// Redefinir senha
 export const redefinirSenha = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { email, codigo, novaSenha } = req.body;
 
     if (!email || !codigo || !novaSenha) {
-      return res.status(400).json({
-        error: "E-mail, código e nova senha são obrigatórios.",
-      });
+      return respostaErro(res, 400, "E-mail, código e nova senha são obrigatórios.");
     }
 
     const usuario = await prisma.usuario.findUnique({
@@ -229,9 +215,7 @@ export const redefinirSenha = async (req: Request, res: Response): Promise<Respo
     });
 
     if (!usuario) {
-      return res.status(404).json({
-        error: "Usuário não encontrado.",
-      });
+      return respostaErro(res, 404, "Usuário não encontrado.");
     }
 
     if (
@@ -239,9 +223,7 @@ export const redefinirSenha = async (req: Request, res: Response): Promise<Respo
       !usuario.expiraCodigo ||
       usuario.expiraCodigo < new Date()
     ) {
-      return res.status(400).json({
-        error: "Código inválido ou expirado.",
-      });
+      return respostaErro(res, 400, "Código inválido ou expirado.");
     }
 
     const senhaHash = await bcrypt.hash(novaSenha, SALT_ROUNDS);
@@ -257,14 +239,10 @@ export const redefinirSenha = async (req: Request, res: Response): Promise<Respo
       },
     });
 
-    return res.status(200).json({
-      message: "Senha redefinida com sucesso!",
-    });
+    return respostaSucesso(res, 200, "Senha redefinida com sucesso!");
   } catch (error) {
-    console.error(error);
+    console.error("Erro ao redefinir senha:", error);
 
-    return res.status(500).json({
-      error: "Erro interno do servidor.",
-    });
+    return respostaErro(res, 500, "Erro interno do servidor.");
   }
 };

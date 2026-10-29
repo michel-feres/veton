@@ -1,6 +1,7 @@
 import { CustomRequest } from "../middlewares/authMiddleware";
 import { Response } from "express";
 import { prisma } from "../database";
+import { respostaSucesso, respostaErro } from "../utils/respostaApi";
 
 //Buscar perfil de usuario
 export const buscarPerfil = async (req: CustomRequest, res: Response): Promise<Response> => {
@@ -8,9 +9,7 @@ export const buscarPerfil = async (req: CustomRequest, res: Response): Promise<R
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const usuario = await prisma.usuario.findUnique({
@@ -33,18 +32,14 @@ export const buscarPerfil = async (req: CustomRequest, res: Response): Promise<R
     });
 
     if (!usuario) {
-      return res.status(404).json({
-        error: "Usuário não encontrado.",
-      });
+      return respostaErro(res, 404, "Usuário não encontrado.");
     }
 
-    return res.status(200).json(usuario);
+    return respostaSucesso(res, 200, "Perfil consultado com sucesso.", { usuario });
   } catch (error) {
     console.error(error);
 
-    return res.status(500).json({
-      error: "Erro interno do servidor.",
-    });
+    return respostaErro(res, 500, "Erro interno do servidor.");
   }
 };
 
@@ -54,9 +49,7 @@ export const atualizarPerfil = async (req: CustomRequest, res: Response): Promis
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const { nome, email, rg, cidade, estado, bairro, numero, cep } = req.body;
@@ -77,16 +70,11 @@ export const atualizarPerfil = async (req: CustomRequest, res: Response): Promis
       },
     });
 
-    return res.status(200).json({
-      message: "Perfil atualizado com sucesso!",
-      usuario,
-    });
+    return respostaSucesso(res, 200, "Perfil atualizado com sucesso!", { usuario });
   } catch (error) {
     console.error(error);
 
-    return res.status(500).json({
-      error: "Erro ao atualizar perfil.",
-    });
+    return respostaErro(res, 500, "Erro ao atualizar perfil.");
   }
 };
 
@@ -96,9 +84,7 @@ export const deletarPerfil = async (req: CustomRequest, res: Response): Promise<
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const usuario = await prisma.usuario.findUnique({
@@ -108,9 +94,7 @@ export const deletarPerfil = async (req: CustomRequest, res: Response): Promise<
     });
 
     if (!usuario) {
-      return res.status(404).json({
-        error: "Usuário não encontrado.",
-      });
+      return respostaErro(res, 404, "Usuário não encontrado.");
     }
 
     await prisma.usuario.delete({
@@ -119,15 +103,11 @@ export const deletarPerfil = async (req: CustomRequest, res: Response): Promise<
       },
     });
 
-    return res.status(200).json({
-      message: "Conta excluída com sucesso!",
-    });
+    return respostaSucesso(res, 200, "Conta excluída com sucesso!");
   } catch (error) {
     console.error(error);
 
-    return res.status(500).json({
-      error: "Erro ao excluir conta.",
-    });
+    return respostaErro(res, 500, "Erro ao excluir conta.");
   }
 };
 
@@ -186,15 +166,13 @@ export const buscarLembretes = async (req: CustomRequest, res: Response): Promis
       },
     });
 
-    return res.status(200).json({
+    return respostaSucesso(res, 200, "Lembretes consultados com sucesso.", {
       consultasHoje,
       vacinasHoje,
     });
   } catch (error) {
     console.error(error);
 
-    return res.status(500).json({
-      error: "Erro ao buscar lembretes.",
-    });
+    return respostaErro(res, 500, "Erro ao buscar lembretes.");
   }
 };

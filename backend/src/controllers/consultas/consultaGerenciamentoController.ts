@@ -7,6 +7,21 @@ import {
   detalhesConsulta,
   possuiAcessoConsulta,
 } from "./consultaUtils";
+import { respostaErro, respostaSucesso } from "../../utils/respostaApi";
+
+const obterIdConsulta = (valor: string | string[] | undefined): number | null => {
+  if (typeof valor !== "string") {
+    return null;
+  }
+
+  const idConsulta = Number(valor);
+
+  if (!Number.isInteger(idConsulta) || idConsulta <= 0) {
+    return null;
+  }
+
+  return idConsulta;
+};
 
 // Alterar data ou horário de uma consulta
 export const alterarHorarioConsulta = async (
@@ -17,25 +32,19 @@ export const alterarHorarioConsulta = async (
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const usuario = await buscarUsuarioConsulta(idUsuario);
 
     if (!usuario || !usuario.tipoUsuario) {
-      return res.status(403).json({
-        error: "Usuário sem tipo de acesso definido.",
-      });
+      return respostaErro(res, 403, "Usuário sem tipo de acesso definido.");
     }
 
-    const idConsulta = Number(req.params.id);
+    const idConsulta = obterIdConsulta(req.params.id);
 
-    if (!Number.isInteger(idConsulta) || idConsulta <= 0) {
-      return res.status(400).json({
-        error: "ID da consulta inválido.",
-      });
+    if (idConsulta === null) {
+      return respostaErro(res, 400, "ID da consulta inválido.");
     }
 
     const consulta = await prisma.consulta.findUnique({
@@ -50,9 +59,7 @@ export const alterarHorarioConsulta = async (
     });
 
     if (!consulta) {
-      return res.status(404).json({
-        error: "Consulta não encontrada.",
-      });
+      return respostaErro(res, 404, "Consulta não encontrada.");
     }
 
     if (
@@ -64,23 +71,17 @@ export const alterarHorarioConsulta = async (
         consulta.idVeterinario
       )
     ) {
-      return res.status(403).json({
-        error: "Você não tem permissão para alterar esta consulta.",
-      });
+      return respostaErro(res, 403, "Você não tem permissão para alterar esta consulta.");
     }
 
     if (consulta.statusConsulta !== "Agendada") {
-      return res.status(400).json({
-        error: "Somente consultas agendadas podem ter o horário alterado.",
-      });
+      return respostaErro(res, 400, "Somente consultas agendadas podem ter o horário alterado.");
     }
 
     const { dataConsulta, horaConsulta } = req.body ?? {};
 
     if (dataConsulta === undefined && horaConsulta === undefined) {
-      return res.status(400).json({
-        error: "Informe a nova data ou o novo horário da consulta.",
-      });
+      return respostaErro(res, 400, "Informe a nova data ou o novo horário da consulta.");
     }
 
     const dadosAtualizacao: {
@@ -90,9 +91,7 @@ export const alterarHorarioConsulta = async (
 
     if (dataConsulta !== undefined) {
       if (typeof dataConsulta !== "string" || !dataISOValida(dataConsulta)) {
-        return res.status(400).json({
-          error: "Informe uma data válida no formato AAAA-MM-DD.",
-        });
+        return respostaErro(res, 400, "Informe uma data válida no formato AAAA-MM-DD.");
       }
 
       dadosAtualizacao.dataConsulta = new Date(`${dataConsulta}T00:00:00.000Z`);
@@ -100,9 +99,7 @@ export const alterarHorarioConsulta = async (
 
     if (horaConsulta !== undefined) {
       if (typeof horaConsulta !== "string" || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(horaConsulta)) {
-        return res.status(400).json({
-          error: "Informe um horário válido no formato HH:mm.",
-        });
+        return respostaErro(res, 400, "Informe um horário válido no formato HH:mm.");
       }
 
       dadosAtualizacao.horaConsulta = horaConsulta;
@@ -114,16 +111,13 @@ export const alterarHorarioConsulta = async (
       include: detalhesConsulta,
     });
 
-    return res.status(200).json({
-      message: "Consulta atualizada com sucesso!",
+    return respostaSucesso(res, 200, "Consulta atualizada com sucesso!", {
       consulta: consultaAtualizada,
     });
   } catch (error) {
     console.error("Erro ao alterar consulta:", error);
 
-    return res.status(500).json({
-      error: "Erro ao alterar consulta.",
-    });
+    return respostaErro(res, 500, "Erro ao alterar consulta.");
   }
 };
 
@@ -133,25 +127,19 @@ export const cancelarConsulta = async (req: CustomRequest, res: Response): Promi
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const usuario = await buscarUsuarioConsulta(idUsuario);
 
     if (!usuario || !usuario.tipoUsuario) {
-      return res.status(403).json({
-        error: "Usuário sem tipo de acesso definido.",
-      });
+      return respostaErro(res, 403, "Usuário sem tipo de acesso definido.");
     }
 
-    const idConsulta = Number(req.params.id);
+    const idConsulta = obterIdConsulta(req.params.id);
 
-    if (!Number.isInteger(idConsulta) || idConsulta <= 0) {
-      return res.status(400).json({
-        error: "ID da consulta inválido.",
-      });
+    if (idConsulta === null) {
+      return respostaErro(res, 400, "ID da consulta inválido.");
     }
 
     const consulta = await prisma.consulta.findUnique({
@@ -166,9 +154,7 @@ export const cancelarConsulta = async (req: CustomRequest, res: Response): Promi
     });
 
     if (!consulta) {
-      return res.status(404).json({
-        error: "Consulta não encontrada.",
-      });
+      return respostaErro(res, 404, "Consulta não encontrada.");
     }
 
     if (
@@ -180,21 +166,15 @@ export const cancelarConsulta = async (req: CustomRequest, res: Response): Promi
         consulta.idVeterinario
       )
     ) {
-      return res.status(403).json({
-        error: "Você não tem permissão para cancelar esta consulta.",
-      });
+      return respostaErro(res, 403, "Você não tem permissão para cancelar esta consulta.");
     }
 
     if (consulta.statusConsulta === "Cancelada") {
-      return res.status(400).json({
-        error: "Esta consulta já foi cancelada.",
-      });
+      return respostaErro(res, 400, "Esta consulta já foi cancelada.");
     }
 
     if (consulta.statusConsulta === "Concluida") {
-      return res.status(400).json({
-        error: "Uma consulta concluída não pode ser cancelada.",
-      });
+      return respostaErro(res, 400, "Uma consulta concluída não pode ser cancelada.");
     }
 
     const consultaCancelada = await prisma.consulta.update({
@@ -202,18 +182,16 @@ export const cancelarConsulta = async (req: CustomRequest, res: Response): Promi
       data: {
         statusConsulta: "Cancelada",
       },
+      include: detalhesConsulta,
     });
 
-    return res.status(200).json({
-      message: "Consulta cancelada com sucesso!",
+    return respostaSucesso(res, 200, "Consulta cancelada com sucesso!", {
       consulta: consultaCancelada,
     });
   } catch (error) {
     console.error("Erro ao cancelar consulta:", error);
 
-    return res.status(500).json({
-      error: "Erro ao cancelar consulta.",
-    });
+    return respostaErro(res, 500, "Erro ao cancelar consulta.");
   }
 };
 
@@ -223,25 +201,19 @@ export const excluirConsulta = async (req: CustomRequest, res: Response): Promis
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const usuario = await buscarUsuarioConsulta(idUsuario);
 
     if (!usuario || !usuario.tipoUsuario) {
-      return res.status(403).json({
-        error: "Usuário sem tipo de acesso definido.",
-      });
+      return respostaErro(res, 403, "Usuário sem tipo de acesso definido.");
     }
 
-    const idConsulta = Number(req.params.id);
+    const idConsulta = obterIdConsulta(req.params.id);
 
-    if (!Number.isInteger(idConsulta) || idConsulta <= 0) {
-      return res.status(400).json({
-        error: "ID da consulta inválido.",
-      });
+    if (idConsulta === null) {
+      return respostaErro(res, 400, "ID da consulta inválido.");
     }
 
     const consulta = await prisma.consulta.findUnique({
@@ -256,9 +228,7 @@ export const excluirConsulta = async (req: CustomRequest, res: Response): Promis
     });
 
     if (!consulta) {
-      return res.status(404).json({
-        error: "Consulta não encontrada.",
-      });
+      return respostaErro(res, 404, "Consulta não encontrada.");
     }
 
     if (
@@ -270,25 +240,18 @@ export const excluirConsulta = async (req: CustomRequest, res: Response): Promis
         consulta.idVeterinario
       )
     ) {
-      return res.status(403).json({
-        error: "Você não tem permissão para excluir esta consulta.",
-      });
+      return respostaErro(res, 403, "Você não tem permissão para excluir esta consulta.");
     }
 
     await prisma.consulta.delete({
       where: { idConsulta },
     });
 
-    return res.status(200).json({
-      message: "Consulta excluída permanentemente.",
-      idConsulta,
-    });
+    return respostaSucesso(res, 200, "Consulta excluída permanentemente.", { idConsulta });
   } catch (error) {
     console.error("Erro ao excluir consulta:", error);
 
-    return res.status(500).json({
-      error: "Erro ao excluir consulta.",
-    });
+    return respostaErro(res, 500, "Erro ao excluir consulta.");
   }
 };
 
@@ -298,25 +261,19 @@ export const reativarConsulta = async (req: CustomRequest, res: Response): Promi
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const usuario = await buscarUsuarioConsulta(idUsuario);
 
     if (!usuario || !usuario.tipoUsuario) {
-      return res.status(403).json({
-        error: "Usuário sem tipo de acesso definido.",
-      });
+      return respostaErro(res, 403, "Usuário sem tipo de acesso definido.");
     }
 
-    const idConsulta = Number(req.params.id);
+    const idConsulta = obterIdConsulta(req.params.id);
 
-    if (!Number.isInteger(idConsulta) || idConsulta <= 0) {
-      return res.status(400).json({
-        error: "ID da consulta inválido.",
-      });
+    if (idConsulta === null) {
+      return respostaErro(res, 400, "ID da consulta inválido.");
     }
 
     const consulta = await prisma.consulta.findUnique({
@@ -331,9 +288,7 @@ export const reativarConsulta = async (req: CustomRequest, res: Response): Promi
     });
 
     if (!consulta) {
-      return res.status(404).json({
-        error: "Consulta não encontrada.",
-      });
+      return respostaErro(res, 404, "Consulta não encontrada.");
     }
 
     if (
@@ -345,15 +300,11 @@ export const reativarConsulta = async (req: CustomRequest, res: Response): Promi
         consulta.idVeterinario
       )
     ) {
-      return res.status(403).json({
-        error: "Você não tem permissão para reativar esta consulta.",
-      });
+      return respostaErro(res, 403, "Você não tem permissão para reativar esta consulta.");
     }
 
     if (consulta.statusConsulta !== "Cancelada") {
-      return res.status(400).json({
-        error: "Somente consultas canceladas podem ser reativadas.",
-      });
+      return respostaErro(res, 400, "Somente consultas canceladas podem ser reativadas.");
     }
 
     const conflito = await prisma.consulta.findFirst({
@@ -367,10 +318,11 @@ export const reativarConsulta = async (req: CustomRequest, res: Response): Promi
     });
 
     if (conflito) {
-      return res.status(409).json({
-        error:
-          "Não foi possível reativar: o veterinário já possui uma consulta agendada nesse horário.",
-      });
+      return respostaErro(
+        res,
+        409,
+        "Não foi possível reativar: o veterinário já possui uma consulta agendada nesse horário."
+      );
     }
 
     const consultaReativada = await prisma.consulta.update({
@@ -378,17 +330,15 @@ export const reativarConsulta = async (req: CustomRequest, res: Response): Promi
       data: {
         statusConsulta: "Agendada",
       },
+      include: detalhesConsulta,
     });
 
-    return res.status(200).json({
-      message: "Consulta reativada com sucesso!",
+    return respostaSucesso(res, 200, "Consulta reativada com sucesso!", {
       consulta: consultaReativada,
     });
   } catch (error) {
     console.error("Erro ao reativar consulta:", error);
 
-    return res.status(500).json({
-      error: "Erro ao reativar consulta.",
-    });
+    return respostaErro(res, 500, "Erro ao reativar consulta.");
   }
 };

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../database";
+import { respostaErro } from "../utils/respostaApi";
 
 export interface CustomRequest extends Request {
   usuarioLogado?: {
@@ -10,11 +11,7 @@ export interface CustomRequest extends Request {
   };
 }
 
-export const verificarToken = async (
-    req: CustomRequest,
-    res: Response,
-    next: NextFunction
-) => {
+export const verificarToken = async (req: CustomRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -51,9 +48,7 @@ export const verificarToken = async (
     });
 
     if (!usuario) {
-      return res.status(401).json({
-        error: "Usuário não encontrado.",
-      });
+      return respostaErro(res, 404, "Usuário não encontrado.");
     }
 
     if (!usuario.tipoUsuario) {

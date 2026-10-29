@@ -1,208 +1,185 @@
 import { Response } from "express";
 import { CustomRequest } from "../middlewares/authMiddleware";
 import { prisma } from "../database";
+import { respostaErro, respostaSucesso } from "../utils/respostaApi";
+
+const obterIdClinica = (valor: string | string[] | undefined): number | null => {
+  if (typeof valor !== "string") {
+    return null;
+  }
+
+  const idClinica = Number(valor);
+
+  if (!Number.isInteger(idClinica) || idClinica <= 0) {
+    return null;
+  }
+
+  return idClinica;
+};
 
 // Cadastrar clínica
-export const cadastrarClinica = async (req: CustomRequest, res: Response): Promise<Response> => {
+export const cadastrarClinica = async (req: CustomRequest, res: Response) => {
   try {
     const { nomeClinica, cnpj, telefone, endereco } = req.body;
 
-    if (!nomeClinica || !cnpj || !telefone || !endereco) {
-      return res.status(400).json({
-        error: "Todos os dados da clínica são obrigatórios.",
-      });
+    if (
+      typeof nomeClinica !== "string" ||
+      !nomeClinica.trim() ||
+      typeof cnpj !== "string" ||
+      !cnpj.trim() ||
+      typeof telefone !== "string" ||
+      !telefone.trim() ||
+      typeof endereco !== "string" ||
+      !endereco.trim()
+    ) {
+      return respostaErro(res, 400, "Todos os dados da clínica são obrigatórios.");
     }
 
+    const cnpjLimpo = cnpj.trim();
+
     const clinicaExistente = await prisma.clinica.findUnique({
-      where: {
-        cnpj,
-      },
+      where: { cnpj: cnpjLimpo },
     });
 
     if (clinicaExistente) {
-      return res.status(400).json({
-        error: "Já existe uma clínica cadastrada com este CNPJ.",
-      });
+      return respostaErro(res, 409, "Já existe uma clínica cadastrada com este CNPJ.");
     }
 
     const clinica = await prisma.clinica.create({
       data: {
-        nomeClinica,
-        cnpj,
-        telefone,
-        endereco,
+        nomeClinica: nomeClinica.trim(),
+        cnpj: cnpjLimpo,
+        telefone: telefone.trim(),
+        endereco: endereco.trim(),
       },
     });
 
-    return res.status(201).json({
-      message: "Clínica cadastrada com sucesso!",
-      clinica,
-    });
-  } catch (error) {
-    console.error("Erro ao cadastrar clínica:", error);
-
-    return res.status(500).json({
-      error: "Erro ao cadastrar clínica.",
-    });
+    return respostaSucesso(res, 201, "Clínica cadastrada com sucesso!", { clinica });
+  } catch {
+    return respostaErro(res, 500, "Erro ao cadastrar clínica.");
   }
 };
 
 // Listar todas as clínicas
-export const listarClinicas = async (req: CustomRequest, res: Response): Promise<Response> => {
+export const listarClinicas = async (req: CustomRequest, res: Response) => {
   try {
+    void req;
+
     const clinicas = await prisma.clinica.findMany();
 
-    return res.status(200).json(clinicas);
-  } catch (error) {
-    console.error("Erro ao listar clínicas:", error);
-
-    return res.status(500).json({
-      error: "Erro ao listar clínicas.",
-    });
+    return respostaSucesso(res, 200, "Clínicas listadas com sucesso!", { clinicas });
+  } catch {
+    return respostaErro(res, 500, "Erro ao listar clínicas.");
   }
 };
 
 // Buscar clínica por ID
-export const buscarClinica = async (req: CustomRequest, res: Response): Promise<Response> => {
+export const buscarClinica = async (req: CustomRequest, res: Response) => {
   try {
-    const idClinica = Number(req.params.id);
+    const idClinica = obterIdClinica(req.params.id);
 
-    if (!idClinica) {
-      return res.status(400).json({
-        error: "ID da clínica inválido.",
-      });
+    if (idClinica === null) {
+      return respostaErro(res, 400, "ID da clínica inválido.");
     }
 
     const clinica = await prisma.clinica.findUnique({
-      where: {
-        idClinica,
-      },
+      where: { idClinica },
     });
 
     if (!clinica) {
-      return res.status(404).json({
-        error: "Clínica não encontrada.",
-      });
+      return respostaErro(res, 404, "Clínica não encontrada.");
     }
 
-    return res.status(200).json(clinica);
-  } catch (error) {
-    console.error("Erro ao buscar clínica:", error);
-
-    return res.status(500).json({
-      error: "Erro ao buscar clínica.",
-    });
+    return respostaSucesso(res, 200, "Clínica encontrada com sucesso!", { clinica });
+  } catch {
+    return respostaErro(res, 500, "Erro ao buscar clínica.");
   }
 };
 
 // Atualizar clínica
-export const atualizarClinica = async (req: CustomRequest, res: Response): Promise<Response> => {
+export const atualizarClinica = async (req: CustomRequest, res: Response) => {
   try {
-    const idClinica = Number(req.params.id);
+    const idClinica = obterIdClinica(req.params.id);
 
-    if (!idClinica) {
-      return res.status(400).json({
-        error: "ID da clínica inválido.",
-      });
+    if (idClinica === null) {
+      return respostaErro(res, 400, "ID da clínica inválido.");
     }
 
     const clinicaExistente = await prisma.clinica.findUnique({
-      where: {
-        idClinica,
-      },
+      where: { idClinica },
     });
 
     if (!clinicaExistente) {
-      return res.status(404).json({
-        error: "Clínica não encontrada.",
-      });
+      return respostaErro(res, 404, "Clínica não encontrada.");
     }
 
     const { nomeClinica, cnpj, telefone, endereco } = req.body;
 
-    if (!nomeClinica || !cnpj || !telefone || !endereco) {
-      return res.status(400).json({
-        error: "Todos os dados da clínica são obrigatórios.",
-      });
+    if (
+      typeof nomeClinica !== "string" ||
+      !nomeClinica.trim() ||
+      typeof cnpj !== "string" ||
+      !cnpj.trim() ||
+      typeof telefone !== "string" ||
+      !telefone.trim() ||
+      typeof endereco !== "string" ||
+      !endereco.trim()
+    ) {
+      return respostaErro(res, 400, "Todos os dados da clínica são obrigatórios.");
     }
+
+    const cnpjLimpo = cnpj.trim();
 
     const cnpjExistente = await prisma.clinica.findFirst({
       where: {
-        cnpj,
-        NOT: {
-          idClinica,
-        },
+        cnpj: cnpjLimpo,
+        NOT: { idClinica },
       },
     });
 
     if (cnpjExistente) {
-      return res.status(400).json({
-        error: "Já existe outra clínica cadastrada com este CNPJ.",
-      });
+      return respostaErro(res, 409, "Já existe outra clínica cadastrada com este CNPJ.");
     }
 
     const clinica = await prisma.clinica.update({
-      where: {
-        idClinica,
-      },
+      where: { idClinica },
       data: {
-        nomeClinica,
-        cnpj,
-        telefone,
-        endereco,
+        nomeClinica: nomeClinica.trim(),
+        cnpj: cnpjLimpo,
+        telefone: telefone.trim(),
+        endereco: endereco.trim(),
       },
     });
 
-    return res.status(200).json({
-      message: "Clínica atualizada com sucesso!",
-      clinica,
-    });
-  } catch (error) {
-    console.error("Erro ao atualizar clínica:", error);
-
-    return res.status(500).json({
-      error: "Erro ao atualizar clínica.",
-    });
+    return respostaSucesso(res, 200, "Clínica atualizada com sucesso!", { clinica });
+  } catch {
+    return respostaErro(res, 500, "Erro ao atualizar clínica.");
   }
 };
 
 // Deletar clínica
-export const deletarClinica = async (req: CustomRequest, res: Response): Promise<Response> => {
+export const deletarClinica = async (req: CustomRequest, res: Response) => {
   try {
-    const idClinica = Number(req.params.id);
+    const idClinica = obterIdClinica(req.params.id);
 
-    if (!idClinica) {
-      return res.status(400).json({
-        error: "ID da clínica inválido.",
-      });
+    if (idClinica === null) {
+      return respostaErro(res, 400, "ID da clínica inválido.");
     }
 
     const clinica = await prisma.clinica.findUnique({
-      where: {
-        idClinica,
-      },
+      where: { idClinica },
     });
 
     if (!clinica) {
-      return res.status(404).json({
-        error: "Clínica não encontrada.",
-      });
+      return respostaErro(res, 404, "Clínica não encontrada.");
     }
 
     await prisma.clinica.delete({
-      where: {
-        idClinica,
-      },
+      where: { idClinica },
     });
 
-    return res.status(200).json({
-      message: "Clínica excluída com sucesso!",
-    });
-  } catch (error) {
-    console.error("Erro ao excluir clínica:", error);
-
-    return res.status(500).json({
-      error: "Erro ao excluir clínica.",
-    });
+    return respostaSucesso(res, 200, "Clínica excluída com sucesso!");
+  } catch {
+    return respostaErro(res, 500, "Erro ao excluir clínica.");
   }
 };

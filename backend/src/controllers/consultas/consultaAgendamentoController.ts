@@ -3,6 +3,7 @@ import { CustomRequest } from "../../middlewares/authMiddleware";
 import { prisma } from "../../database";
 import type { Prisma } from "../../generated/prisma/client";
 import { buscarUsuarioConsulta, dataISOValida, detalhesConsulta } from "./consultaUtils";
+import { respostaErro, respostaSucesso } from "../../utils/respostaApi";
 
 // Marcar consulta
 export const marcarConsulta = async (req: CustomRequest, res: Response): Promise<Response> => {
@@ -10,17 +11,13 @@ export const marcarConsulta = async (req: CustomRequest, res: Response): Promise
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const usuario = await buscarUsuarioConsulta(idUsuario);
 
     if (!usuario || !usuario.tipoUsuario) {
-      return res.status(403).json({
-        error: "Usuário sem tipo de acesso definido.",
-      });
+      return respostaErro(res, 403, "Usuário sem tipo de acesso definido.");
     }
 
     const {
@@ -48,15 +45,11 @@ export const marcarConsulta = async (req: CustomRequest, res: Response): Promise
       !Number.isInteger(idClinica) ||
       idClinica <= 0
     ) {
-      return res.status(400).json({
-        error: "Informe uma data, um horário e IDs válidos para a consulta.",
-      });
+      return respostaErro(res, 400, "Informe uma data, um horário e IDs válidos para a consulta.");
     }
 
     if (observacoes !== undefined && observacoes !== null && typeof observacoes !== "string") {
-      return res.status(400).json({
-        error: "O campo observacoes deve ser um texto.",
-      });
+      return respostaErro(res, 400, "O campo observacoes deve ser um texto.");
     }
 
     const animal = await prisma.animal.findUnique({
@@ -64,9 +57,7 @@ export const marcarConsulta = async (req: CustomRequest, res: Response): Promise
     });
 
     if (!animal) {
-      return res.status(404).json({
-        error: "Animal não encontrado.",
-      });
+      return respostaErro(res, 404, "Animal não encontrado.");
     }
 
     const clinica = await prisma.clinica.findUnique({
@@ -74,9 +65,7 @@ export const marcarConsulta = async (req: CustomRequest, res: Response): Promise
     });
 
     if (!clinica) {
-      return res.status(404).json({
-        error: "Clínica não encontrada.",
-      });
+      return respostaErro(res, 404, "Clínica não encontrada.");
     }
 
     const veterinario = await prisma.veterinario.findUnique({
@@ -84,27 +73,27 @@ export const marcarConsulta = async (req: CustomRequest, res: Response): Promise
     });
 
     if (!veterinario) {
-      return res.status(404).json({
-        error: "Veterinário não encontrado.",
-      });
+      return respostaErro(res, 404, "Veterinário não encontrado.");
     }
 
     if (usuario.tipoUsuario === "Tutor") {
-      if (usuario.tutor?.idTutor !== animal.idTutor) {
-        return res.status(403).json({
-          error: "Você só pode agendar consultas para seus próprios animais.",
-        });
+      if (!usuario.tutor) {
+        return respostaErro(res, 404, "Cadastro de tutor não encontrado.");
+      }
+
+      if (usuario.tutor.idTutor !== animal.idTutor) {
+        return respostaErro(res, 403, "Você só pode agendar consultas para seus próprios animais.");
       }
     } else if (usuario.tipoUsuario === "Veterinario") {
-      if (usuario.veterinario?.idVeterinario !== idVeterinario) {
-        return res.status(403).json({
-          error: "Você só pode agendar consultas para si mesmo.",
-        });
+      if (!usuario.veterinario) {
+        return respostaErro(res, 404, "Cadastro de veterinário não encontrado.");
+      }
+
+      if (usuario.veterinario.idVeterinario !== idVeterinario) {
+        return respostaErro(res, 403, "Você só pode agendar consultas para si mesmo.");
       }
     } else {
-      return res.status(403).json({
-        error: "Permissão não autorizada.",
-      });
+      return respostaErro(res, 403, "Permissão não autorizada.");
     }
 
     const consulta = await prisma.consulta.create({
@@ -119,16 +108,11 @@ export const marcarConsulta = async (req: CustomRequest, res: Response): Promise
       include: detalhesConsulta,
     });
 
-    return res.status(201).json({
-      message: "Consulta agendada com sucesso!",
-      consulta,
-    });
+    return respostaSucesso(res, 201, "Consulta agendada com sucesso!", { consulta });
   } catch (error) {
     console.error("Erro ao agendar consulta:", error);
 
-    return res.status(500).json({
-      error: "Erro ao agendar consulta.",
-    });
+    return respostaErro(res, 500, "Erro ao agendar consulta.");
   }
 };
 
@@ -138,17 +122,13 @@ export const listarConsultas = async (req: CustomRequest, res: Response): Promis
     const idUsuario = req.usuarioLogado?.idUsuario;
 
     if (!idUsuario) {
-      return res.status(401).json({
-        error: "Usuário não autenticado.",
-      });
+      return respostaErro(res, 401, "Usuário não autenticado.");
     }
 
     const usuario = await buscarUsuarioConsulta(idUsuario);
 
     if (!usuario || !usuario.tipoUsuario) {
-      return res.status(403).json({
-        error: "Usuário sem tipo de acesso definido.",
-      });
+      return respostaErro(res, 403, "Usuário sem tipo de acesso definido.");
     }
 
     const { dataInicio, dataFim } = req.query;
@@ -158,15 +138,11 @@ export const listarConsultas = async (req: CustomRequest, res: Response): Promis
         (typeof dataInicio !== "string" || !dataISOValida(dataInicio))) ||
       (dataFim !== undefined && (typeof dataFim !== "string" || !dataISOValida(dataFim)))
     ) {
-      return res.status(400).json({
-        error: "Use datas válidas no formato AAAA-MM-DD.",
-      });
+      return respostaErro(res, 400, "Use datas válidas no formato AAAA-MM-DD.");
     }
 
     if (typeof dataInicio === "string" && typeof dataFim === "string" && dataInicio > dataFim) {
-      return res.status(400).json({
-        error: "A data inicial não pode ser posterior à data final.",
-      });
+      return respostaErro(res, 400, "A data inicial não pode ser posterior à data final.");
     }
 
     const whereConsulta: Prisma.ConsultaWhereInput = {};
@@ -186,9 +162,7 @@ export const listarConsultas = async (req: CustomRequest, res: Response): Promis
 
     if (usuario.tipoUsuario === "Tutor") {
       if (!usuario.tutor) {
-        return res.status(404).json({
-          error: "Cadastro de tutor não encontrado.",
-        });
+        return respostaErro(res, 404, "Cadastro de tutor não encontrado.");
       }
 
       whereConsulta.animal = {
@@ -198,16 +172,12 @@ export const listarConsultas = async (req: CustomRequest, res: Response): Promis
       };
     } else if (usuario.tipoUsuario === "Veterinario") {
       if (!usuario.veterinario) {
-        return res.status(404).json({
-          error: "Cadastro de veterinário não encontrado.",
-        });
+        return respostaErro(res, 404, "Cadastro de veterinário não encontrado.");
       }
 
       whereConsulta.idVeterinario = usuario.veterinario.idVeterinario;
     } else {
-      return res.status(403).json({
-        error: "Permissão não autorizada.",
-      });
+      return respostaErro(res, 403, "Permissão não autorizada.");
     }
 
     const consultas = await prisma.consulta.findMany({
@@ -216,12 +186,10 @@ export const listarConsultas = async (req: CustomRequest, res: Response): Promis
       orderBy: [{ dataConsulta: "asc" }, { horaConsulta: "asc" }],
     });
 
-    return res.status(200).json(consultas);
+    return respostaSucesso(res, 200, "Consultas listadas com sucesso!", { consultas });
   } catch (error) {
     console.error("Erro ao listar consultas:", error);
 
-    return res.status(500).json({
-      error: "Erro ao listar consultas.",
-    });
+    return respostaErro(res, 500, "Erro ao listar consultas.");
   }
 };

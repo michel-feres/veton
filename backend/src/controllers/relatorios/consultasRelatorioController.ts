@@ -2,6 +2,7 @@ import { Response } from "express";
 import { CustomRequest } from "../../middlewares/authMiddleware";
 import { obterRelatorioConsultas, validarPeriodoConsulta } from "../../services/relatorioService";
 import { gerarExcel, gerarPDF } from "../../services/exportacaoRelatorioService";
+import { respostaErro, respostaSucesso } from "../../utils/respostaApi";
 
 // Dados para o painel de consultas
 export const consultarRelatorioConsultas = async (
@@ -12,18 +13,16 @@ export const consultarRelatorioConsultas = async (
     const periodo = validarPeriodoConsulta(req.query.dataInicio, req.query.dataFim);
 
     if (periodo.erro) {
-      return res.status(400).json({ error: periodo.erro });
+      return respostaErro(res, 400, periodo.erro);
     }
 
     const relatorio = await obterRelatorioConsultas(periodo.dataInicio, periodo.dataFim);
 
-    return res.status(200).json(relatorio);
+    return respostaSucesso(res, 200, "Relatório de consultas gerado com sucesso!", { relatorio });
   } catch (error) {
     console.error("Erro ao gerar relatório de consultas:", error);
 
-    return res.status(500).json({
-      error: "Erro ao gerar relatório de consultas.",
-    });
+    return respostaErro(res, 500, "Erro ao gerar relatório de consultas.");
   }
 };
 
@@ -36,15 +35,13 @@ export const exportarRelatorioConsultas = async (
     const formato = req.query.formato;
 
     if (formato !== "pdf" && formato !== "excel") {
-      return res.status(400).json({
-        error: "Informe formato=pdf ou formato=excel.",
-      });
+      return respostaErro(res, 400, "Informe formato=pdf ou formato=excel.");
     }
 
     const periodo = validarPeriodoConsulta(req.query.dataInicio, req.query.dataFim);
 
     if (periodo.erro) {
-      return res.status(400).json({ error: periodo.erro });
+      return respostaErro(res, 400, periodo.erro);
     }
 
     const relatorio = await obterRelatorioConsultas(periodo.dataInicio, periodo.dataFim);
@@ -102,8 +99,6 @@ export const exportarRelatorioConsultas = async (
   } catch (error) {
     console.error("Erro ao exportar relatório de consultas:", error);
 
-    return res.status(500).json({
-      error: "Erro ao exportar relatório de consultas.",
-    });
+    return respostaErro(res, 500, "Erro ao exportar relatório de consultas.");
   }
 };
