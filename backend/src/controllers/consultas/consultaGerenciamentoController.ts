@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { CustomRequest } from "../../middlewares/authMiddleware";
 import { prisma } from "../../database";
+import { StatusConsulta } from "../../generated/prisma/client";
 import {
   buscarUsuarioConsulta,
   dataISOValida,
@@ -74,7 +75,7 @@ export const alterarHorarioConsulta = async (
       return respostaErro(res, 403, "Você não tem permissão para alterar esta consulta.");
     }
 
-    if (consulta.statusConsulta !== "Agendada") {
+    if (consulta.statusConsulta !== StatusConsulta.Agendada) {
       return respostaErro(res, 400, "Somente consultas agendadas podem ter o horário alterado.");
     }
 
@@ -121,8 +122,11 @@ export const alterarHorarioConsulta = async (
   }
 };
 
-// Cancelar consulta
-export const cancelarConsulta = async (req: CustomRequest, res: Response): Promise<Response> => {
+// Alterar status da consulta
+export const alterarStatusConsulta = async (
+  req: CustomRequest,
+  res: Response
+): Promise<Response> => {
   try {
     const idUsuario = req.usuarioLogado?.idUsuario;
 
@@ -141,6 +145,17 @@ export const cancelarConsulta = async (req: CustomRequest, res: Response): Promi
     if (idConsulta === null) {
       return respostaErro(res, 400, "ID da consulta inválido.");
     }
+
+    const statusRecebido: unknown = req.body?.status;
+
+    if (
+      typeof statusRecebido !== "string" ||
+      !Object.values(StatusConsulta).includes(statusRecebido as StatusConsulta)
+    ) {
+      return respostaErro(res, 400, "Informe um status válido: Agendada, Concluida ou Cancelada.");
+    }
+
+    const novoStatus = statusRecebido as StatusConsulta;
 
     const consulta = await prisma.consulta.findUnique({
       where: { idConsulta },
@@ -166,36 +181,83 @@ export const cancelarConsulta = async (req: CustomRequest, res: Response): Promi
         consulta.idVeterinario
       )
     ) {
-      return respostaErro(res, 403, "Você não tem permissão para cancelar esta consulta.");
+      return respostaErro(res, 403, "Você não tem permissão para alterar esta consulta.");
     }
 
-    if (consulta.statusConsulta === "Cancelada") {
-      return respostaErro(res, 400, "Esta consulta já foi cancelada.");
+    if (consulta.statusConsulta === novoStatus) {
+      return respostaErro(res, 400, "A consulta já possui esse status.");
     }
 
-    if (consulta.statusConsulta === "Concluida") {
-      return respostaErro(res, 400, "Uma consulta concluída não pode ser cancelada.");
+    if (novoStatus === StatusConsulta.Concluida) {
+      if (
+        usuario.tipoUsuario !== "Veterinario" ||
+        usuario.veterinario?.idVeterinario !== consulta.idVeterinario
+      ) {
+        return respostaErro(
+          res,
+          403,
+          "Somente o veterinário responsável pode concluir a consulta."
+        );
+      }
+
+      if (consulta.statusConsulta !== StatusConsulta.Agendada) {
+        return respostaErro(res, 400, "Somente consultas agendadas podem ser concluídas.");
+      }
     }
 
-    const consultaCancelada = await prisma.consulta.update({
+    if (novoStatus === StatusConsulta.Cancelada) {
+      if (consulta.statusConsulta !== StatusConsulta.Agendada) {
+        return respostaErro(res, 400, "Somente consultas agendadas podem ser canceladas.");
+      }
+    }
+
+    if (novoStatus === StatusConsulta.Agendada) {
+      if (consulta.statusConsulta !== StatusConsulta.Cancelada) {
+        return respostaErro(res, 400, "Somente consultas canceladas podem ser reativadas.");
+      }
+
+      const conflito = await prisma.consulta.findFirst({
+        where: {
+          idConsulta: { not: idConsulta },
+          idVeterinario: consulta.idVeterinario,
+          dataConsulta: consulta.dataConsulta,
+          horaConsulta: consulta.horaConsulta,
+          statusConsulta: StatusConsulta.Agendada,
+        },
+      });
+
+      if (conflito) {
+        return respostaErro(
+          res,
+          409,
+          "Não foi possível reativar: o veterinário já possui uma consulta agendada nesse horário."
+        );
+      }
+    }
+
+    const consultaAtualizada = await prisma.consulta.update({
       where: { idConsulta },
       data: {
-        statusConsulta: "Cancelada",
+        statusConsulta: novoStatus,
       },
       include: detalhesConsulta,
     });
 
-    return respostaSucesso(res, 200, "Consulta cancelada com sucesso!", {
-      consulta: consultaCancelada,
-    });
-  } catch (error) {
-    console.error("Erro ao cancelar consulta:", error);
+    const mensagens: Record<StatusConsulta, string> = {
+      [StatusConsulta.Agendada]: "Consulta reativada com sucesso!",
+      [StatusConsulta.Concluida]: "Consulta concluída com sucesso!",
+      [StatusConsulta.Cancelada]: "Consulta cancelada com sucesso!",
+    };
 
-    return respostaErro(res, 500, "Erro ao cancelar consulta.");
+    return respostaSucesso(res, 200, mensagens[novoStatus], { consulta: consultaAtualizada });
+  } catch (error) {
+    console.error("Erro ao alterar status da consulta:", error);
+
+    return respostaErro(res, 500, "Erro ao alterar status da consulta.");
   }
 };
 
-// Excluir consulta
+// Excluir consulta permanentemente
 export const excluirConsulta = async (req: CustomRequest, res: Response): Promise<Response> => {
   try {
     const idUsuario = req.usuarioLogado?.idUsuario;
@@ -252,93 +314,5 @@ export const excluirConsulta = async (req: CustomRequest, res: Response): Promis
     console.error("Erro ao excluir consulta:", error);
 
     return respostaErro(res, 500, "Erro ao excluir consulta.");
-  }
-};
-
-// Reativar consulta cancelada
-export const reativarConsulta = async (req: CustomRequest, res: Response): Promise<Response> => {
-  try {
-    const idUsuario = req.usuarioLogado?.idUsuario;
-
-    if (!idUsuario) {
-      return respostaErro(res, 401, "Usuário não autenticado.");
-    }
-
-    const usuario = await buscarUsuarioConsulta(idUsuario);
-
-    if (!usuario || !usuario.tipoUsuario) {
-      return respostaErro(res, 403, "Usuário sem tipo de acesso definido.");
-    }
-
-    const idConsulta = obterIdConsulta(req.params.id);
-
-    if (idConsulta === null) {
-      return respostaErro(res, 400, "ID da consulta inválido.");
-    }
-
-    const consulta = await prisma.consulta.findUnique({
-      where: { idConsulta },
-      include: {
-        animal: {
-          select: {
-            idTutor: true,
-          },
-        },
-      },
-    });
-
-    if (!consulta) {
-      return respostaErro(res, 404, "Consulta não encontrada.");
-    }
-
-    if (
-      !possuiAcessoConsulta(
-        usuario.tipoUsuario,
-        usuario.tutor?.idTutor,
-        usuario.veterinario?.idVeterinario,
-        consulta.animal.idTutor,
-        consulta.idVeterinario
-      )
-    ) {
-      return respostaErro(res, 403, "Você não tem permissão para reativar esta consulta.");
-    }
-
-    if (consulta.statusConsulta !== "Cancelada") {
-      return respostaErro(res, 400, "Somente consultas canceladas podem ser reativadas.");
-    }
-
-    const conflito = await prisma.consulta.findFirst({
-      where: {
-        idConsulta: { not: idConsulta },
-        idVeterinario: consulta.idVeterinario,
-        dataConsulta: consulta.dataConsulta,
-        horaConsulta: consulta.horaConsulta,
-        statusConsulta: "Agendada",
-      },
-    });
-
-    if (conflito) {
-      return respostaErro(
-        res,
-        409,
-        "Não foi possível reativar: o veterinário já possui uma consulta agendada nesse horário."
-      );
-    }
-
-    const consultaReativada = await prisma.consulta.update({
-      where: { idConsulta },
-      data: {
-        statusConsulta: "Agendada",
-      },
-      include: detalhesConsulta,
-    });
-
-    return respostaSucesso(res, 200, "Consulta reativada com sucesso!", {
-      consulta: consultaReativada,
-    });
-  } catch (error) {
-    console.error("Erro ao reativar consulta:", error);
-
-    return respostaErro(res, 500, "Erro ao reativar consulta.");
   }
 };

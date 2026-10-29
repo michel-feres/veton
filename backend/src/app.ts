@@ -44,9 +44,8 @@ import {
 
 import {
   alterarHorarioConsulta,
-  cancelarConsulta,
+  alterarStatusConsulta,
   excluirConsulta,
-  reativarConsulta,
 } from "./controllers/consultas/consultaGerenciamentoController";
 
 import {
@@ -91,6 +90,7 @@ import {
   listarConsultasQuerySchema,
   alterarHorarioConsultaSchema,
   consultaIdParamsSchema,
+  alterarStatusConsultaSchema,
 } from "./validations/consultaSchemas";
 
 import {
@@ -251,16 +251,13 @@ app.patch(
   alterarHorarioConsulta
 );
 app.patch(
-  "/consultas/:id/cancelar",
+  "/consultas/:id/status",
   verificarToken,
-  validarRequisicao({ params: consultaIdParamsSchema }),
-  cancelarConsulta
-);
-app.patch(
-  "/consultas/:id/reativar",
-  verificarToken,
-  validarRequisicao({ params: consultaIdParamsSchema }),
-  reativarConsulta
+  validarRequisicao({
+    params: consultaIdParamsSchema,
+    body: alterarStatusConsultaSchema,
+  }),
+  alterarStatusConsulta
 );
 app.delete(
   "/consultas/:id",

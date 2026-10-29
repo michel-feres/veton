@@ -62,3 +62,9 @@ export const consultaIdParamsSchema = z
     id: z.string().regex(/^[1-9]\d*$/, "ID da consulta inválido."),
   })
   .strict();
+
+export const alterarStatusConsultaSchema = z
+  .object({
+    status: z.enum(["Agendada", "Concluida", "Cancelada"]),
+  })
+  .strict();
