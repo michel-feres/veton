@@ -15,12 +15,12 @@ export const registrarUsuarioSchema = z
     senha: senhaValida,
     tipoUsuario: z.enum(["Tutor", "Veterinario"]),
 
-    rg: textoObrigatorio.optional(),
-    cidade: textoObrigatorio.optional(),
-    estado: textoObrigatorio.optional(),
-    bairro: textoObrigatorio.optional(),
-    numero: textoObrigatorio.optional(),
-    cep: textoObrigatorio.optional(),
+    rg: textoObrigatorio,
+    cidade: textoObrigatorio,
+    estado: textoObrigatorio,
+    bairro: textoObrigatorio,
+    numero: textoObrigatorio,
+    cep: textoObrigatorio,
 
     situacao: z.enum(["Ativo", "Inativo"]).optional(),
 

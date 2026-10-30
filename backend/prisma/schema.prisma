@@ -35,55 +35,55 @@ enum StatusConsulta {
 }
 
 model Usuario {
-  idUsuario         Int            @id @default(autoincrement())
-  rg                String?
+  idUsuario         Int           @id @default(autoincrement())
+  rg                String
   nome              String
-  cidade            String?
-  email             String         @unique
-  estado            String?
-  bairro            String?
-  numero            String?
-  cep               String?
+  cidade            String
+  email             String        @unique
+  estado            String
+  bairro            String
+  numero            String
+  cep               String
   senha             String
-  situacao          StatusUsuario?
-  tipoUsuario       TipoUsuario?
+  situacao          StatusUsuario @default(Ativo)
+  tipoUsuario       TipoUsuario
   codigoRecuperacao String?
   expiraCodigo      DateTime?
-  
-  tutor             Tutor?
-  veterinario       Veterinario?
+
+  tutor       Tutor?
+  veterinario Veterinario?
 }
 
 model Tutor {
-  idTutor   Int     @id @default(autoincrement())
-  cpf       String  @unique
+  idTutor Int    @id @default(autoincrement())
+  cpf     String @unique
 
   idUsuario Int     @unique
   usuario   Usuario @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
 
-  animais   Animal[]
+  animais Animal[]
 }
 
 model Veterinario {
-  idVeterinario Int     @id @default(autoincrement())
-  crmv          String  @unique
+  idVeterinario Int    @id @default(autoincrement())
+  crmv          String @unique
   especialidade String
 
-  idUsuario     Int     @unique
-  usuario       Usuario @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+  idUsuario Int     @unique
+  usuario   Usuario @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
 
-  consultas        Consulta[]
+  consultas         Consulta[]
   historicosCriados HistoricoMedico[]
 }
 
 model Clinica {
-  idClinica   Int        @id @default(autoincrement())
+  idClinica   Int    @id @default(autoincrement())
   nomeClinica String
-  cnpj        String     @unique
+  cnpj        String @unique
   telefone    String
   endereco    String
 
-  consultas   Consulta[]
+  consultas Consulta[]
 }
 
 model Animal {
@@ -97,12 +97,12 @@ model Animal {
   dataNascimento DateTime?
   status         StatusAnimal @default(Saudavel)
 
-  idTutor        Int
-  tutor          Tutor        @relation(fields: [idTutor], references: [idTutor], onDelete: Cascade)
+  idTutor Int
+  tutor   Tutor @relation(fields: [idTutor], references: [idTutor], onDelete: Cascade)
 
-  vacinas          Vacina[]
-  historicoMedico  HistoricoMedico[]
-  consultas        Consulta[]
+  vacinas         Vacina[]
+  historicoMedico HistoricoMedico[]
+  consultas       Consulta[]
 }
 
 model Vacina {
@@ -112,21 +112,21 @@ model Vacina {
   dataAplicacao DateTime  @default(now())
   proximaDose   DateTime?
 
-  idAnimal      Int
-  animal        Animal    @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
+  idAnimal Int
+  animal   Animal @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
 }
 
 model HistoricoMedico {
-  idHistorico   Int          @id @default(autoincrement())
-  descricao     String
-  tratamento    String?
-  data          DateTime     @default(now())
+  idHistorico Int      @id @default(autoincrement())
+  descricao   String
+  tratamento  String?
+  data        DateTime @default(now())
 
-  idAnimal      Int
-  animal        Animal       @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
+  idAnimal Int
+  animal   Animal @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
 
-  veterinarioId Int?
-  veterinario   Veterinario? @relation(fields: [veterinarioId], references: [idVeterinario])
+  veterinarioId Int
+  veterinario   Veterinario @relation(fields: [veterinarioId], references: [idVeterinario])
 }
 
 model Consulta {
@@ -136,12 +136,12 @@ model Consulta {
   observacoes    String?
   statusConsulta StatusConsulta @default(Agendada)
 
-  idAnimal       Int
-  animal         Animal         @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
+  idAnimal Int
+  animal   Animal @relation(fields: [idAnimal], references: [idAnimal], onDelete: Cascade)
 
-  idVeterinario  Int
-  veterinario    Veterinario    @relation(fields: [idVeterinario], references: [idVeterinario])
+  idVeterinario Int
+  veterinario   Veterinario @relation(fields: [idVeterinario], references: [idVeterinario])
 
-  idClinica      Int
-  clinica        Clinica        @relation(fields: [idClinica], references: [idClinica])
+  idClinica Int
+  clinica   Clinica @relation(fields: [idClinica], references: [idClinica])
 }

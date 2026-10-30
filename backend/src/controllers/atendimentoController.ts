@@ -132,16 +132,16 @@ export const adicionarHistorico = async (req: CustomRequest, res: Response) => {
       return respostaErro(res, 404, "Animal não encontrado.");
     }
 
-    let idVeterinario: number | null = null;
+    if (!usuarioId) {
+      return respostaErro(res, 401, "Usuário não autenticado.");
+    }
 
-    if (usuarioId !== undefined) {
-      const veterinario = await prisma.veterinario.findUnique({
-        where: { idUsuario: Number(usuarioId) },
-      });
+    const veterinario = await prisma.veterinario.findUnique({
+      where: { idUsuario: Number(usuarioId) },
+    });
 
-      if (veterinario) {
-        idVeterinario = veterinario.idVeterinario;
-      }
+    if (!veterinario) {
+      return respostaErro(res, 403, "Cadastro de veterinário não encontrado.");
     }
 
     const novoHistorico = await prisma.historicoMedico.create({
@@ -152,11 +152,9 @@ export const adicionarHistorico = async (req: CustomRequest, res: Response) => {
         animal: {
           connect: { idAnimal },
         },
-        ...(idVeterinario !== null && {
-          veterinario: {
-            connect: { idVeterinario },
-          },
-        }),
+        veterinario: {
+          connect: { idVeterinario: veterinario.idVeterinario },
+        },
       },
     });
 
