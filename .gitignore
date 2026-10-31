@@ -1,11 +1,6 @@
 # Dependências
 node_modules/
 
-# Arquivos de ambiente e credenciais
-.env
-.env.*
-!.env.example
-
 # Arquivos compilados
 dist/
 build/
