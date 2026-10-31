@@ -1,0 +1,2 @@
+Adicione nesta pasta uma foto de cachorro com o nome cachorro-veton.jpg.
+O arquivo será exibido no painel oval à direita das telas de autenticação.
